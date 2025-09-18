@@ -1,0 +1,60 @@
+/* Weather Widget */
+.weatherWidget {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.weatherWidget:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.widgetIcon {
+  color: #60a5fa;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(96, 165, 250, 0.2);
+  border-radius: 8px;
+}
+
+.weatherInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tempDisplay {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.locationDisplay {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.weatherDetails {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 2px;
+}
+
+.weatherDetails span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

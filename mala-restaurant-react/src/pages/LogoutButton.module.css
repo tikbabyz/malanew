@@ -1,0 +1,239 @@
+/* LogoutButton.module.css - Mala Restaurant Theme */
+
+.logoutButton {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  min-width: 120px;
+  justify-content: center;
+}
+
+.logoutButton:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+}
+
+.logoutButton:active {
+  transform: translateY(0);
+}
+
+.logoutButton.ghost {
+  background: transparent;
+  color: #dc2626;
+  border: 2px solid #dc2626;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
+}
+
+.logoutButton.ghost:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.logoutButton.small {
+  padding: 8px 12px;
+  font-size: 12px;
+  min-width: 100px;
+}
+
+.logoutButton.large {
+  padding: 14px 20px;
+  font-size: 16px;
+  min-width: 140px;
+}
+
+.icon {
+  font-size: 16px;
+}
+
+.confirmDialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.dialogContent {
+  background: linear-gradient(145deg, #1f2937 0%, #111827 100%);
+  border-radius: 24px;
+  padding: 40px 36px 32px 36px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  animation: slideUp 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.dialogContent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
+}
+
+.dialogHeader {
+  text-align: left;
+  margin-bottom: 32px;
+}
+
+.dialogIcon {
+  font-size: 32px;
+  color: #ef4444;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.dialogTitle {
+  font-size: 28px;
+  font-weight: 800;
+  color: white;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.5px;
+}
+
+.dialogMessage {
+  font-size: 16px;
+  color: #9ca3af;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.dialogActions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  margin-top: 32px;
+}
+
+.cancelButton {
+  background: rgba(55, 65, 81, 0.8);
+  color: #d1d5db;
+  border: 1px solid rgba(75, 85, 99, 0.6);
+  border-radius: 16px;
+  padding: 14px 24px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 100px;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+
+.cancelButton:hover {
+  background: rgba(75, 85, 99, 0.8);
+  border-color: rgba(107, 114, 128, 0.8);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.confirmButton {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 14px 24px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 
+    0 4px 14px rgba(220, 38, 38, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  min-width: 120px;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.confirmButton:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(220, 38, 38, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .dialogContent {
+    padding: 32px 24px 24px 24px;
+    margin: 20px;
+    border-radius: 20px;
+  }
+  
+  .dialogTitle {
+    font-size: 24px;
+  }
+  
+  .dialogMessage {
+    font-size: 15px;
+  }
+  
+  .dialogActions {
+    flex-direction: column-reverse;
+    gap: 12px;
+    margin-top: 28px;
+  }
+  
+  .cancelButton,
+  .confirmButton {
+    width: 100%;
+    padding: 16px 24px;
+  }
+  
+  .dialogIcon {
+    font-size: 28px;
+  }
+}

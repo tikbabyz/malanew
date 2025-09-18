@@ -1,0 +1,9 @@
+flask
+flask-cors
+ultralytics
+opencv-python
+Pillow
+numpy
+Flask-SQLAlchemy
+psycopg2-binary
+SQLAlchemy>=2.0

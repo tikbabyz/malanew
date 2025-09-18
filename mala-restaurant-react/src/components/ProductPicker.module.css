@@ -1,0 +1,269 @@
+/* ===================== */
+/* THEME VARIABLES       */
+/* ===================== */
+:root {
+  --red: #dc2626; /* primary */
+  --red-700: #b91c1c;
+  --rose-50: #fff1f2;
+  --rose-100: #ffe4e6;
+  --rose-200: #fecdd3;
+
+  --fg: #111827;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --bg: #ffffff;
+
+  --radius: 18px;
+  --shadow: 0 8px 24px rgba(220, 38, 38, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 32px rgba(220, 38, 38, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* --------------------- Search box --------------------- */
+.searchWrap {
+  position: relative;
+  margin: 10px 0 16px;
+}
+.searchInput {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px 0 42px;
+  background: var(--bg);
+  color: var(--fg); /* เดิมเทาอ่อนเกินไป */
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  outline: none;
+  transition: box-shadow 0.18s, border-color 0.18s, background 0.18s;
+}
+.searchInput::placeholder {
+  color: #9aa0a6;
+}
+.searchInput:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  background: #fff;
+}
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: #9aa0a6;
+  pointer-events: none;
+}
+.searchWrap > svg {
+  display: block;
+}
+
+/* --------------------- Grid --------------------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+/* --------------------- Card --------------------- */
+.card {
+  background: var(--bg);
+  border: 1.5px solid var(--rose-200);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.4, 2, 0.3, 1), box-shadow 0.2s,
+    border-color 0.2s;
+  position: relative;
+}
+.card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--red-700);
+}
+.card:active {
+  transform: translateY(-1px) scale(1.01);
+}
+
+/* --------------------- Thumbnail --------------------- */
+.thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: linear-gradient(135deg, #fff 65%, var(--rose-50) 100%);
+  border-bottom: 1.5px solid var(--rose-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* ภาพเต็มการ์ดสวยกว่า contain */
+  transition: transform 0.22s cubic-bezier(0.4, 2, 0.3, 1);
+}
+.card:hover .thumb img {
+  transform: scale(1.06);
+}
+
+/* Ribbon โปร (ใส่ <div class="ribbon">โปร</div> ใน .thumb เมื่อมีโปร) */
+.ribbon {
+  position: absolute;
+  top: 10px;
+  left: -6px;
+  background: var(--red);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.78rem;
+  padding: 6px 10px 6px 16px;
+  border-radius: 0 10px 10px 0;
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+}
+
+/* --------------------- Meta --------------------- */
+.meta {
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.name {
+  color: var(--red);
+  font-weight: 800;
+  font-size: 1.06rem;
+  line-height: 1.22;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+.priceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.price {
+  color: var(--red);
+  font-weight: 900;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+.cat {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #7f1d1d;
+  background: var(--rose-100);
+  border: 1px solid var(--rose-200);
+  border-radius: 999px;
+  padding: 3px 10px;
+  align-self: flex-start;
+}
+
+/* --------------------- Placeholder (no image) --------------------- */
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+  color: #fff;
+  gap: 0.4rem;
+  border: 0;
+}
+.placeholderIcon {
+  font-size: 2rem;
+  opacity: 0.9;
+}
+.placeholderText {
+  font-size: 0.78rem;
+  font-weight: 700;
+  opacity: 0.9;
+  color: #e5e7eb;
+}
+
+/* --------------------- Stock --------------------- */
+.stockInfo {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--line);
+}
+.stockText {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.28rem 0.6rem;
+  border-radius: 0.5rem;
+  display: inline-block;
+  border: 1px solid transparent;
+}
+.stockNormal {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border-color: rgba(34, 197, 94, 0.22);
+}
+.stockLow {
+  background: rgba(251, 191, 36, 0.12);
+  color: #d97706;
+  border-color: rgba(251, 191, 36, 0.25);
+}
+.stockEmpty {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+/* Progress bar เล็ก ๆ ใต้สต็อก (เพิ่ม <div class="stockBar"><span style="--p:0.35"></span></div>) */
+.stockBar {
+  width: 100%;
+  height: 8px;
+  background: #fee2e2;
+  border-radius: 5px;
+  margin-top: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.stockBar span {
+  display: block;
+  height: 100%;
+  width: calc(var(--p, 0) * 100%);
+  background: linear-gradient(90deg, #dc2626 60%, #fca5a5 100%);
+  border-radius: 5px;
+  transition: width .3s cubic-bezier(.4,2,.3,1);
+}
+
+/* --------------------- Out of stock --------------------- */
+.outOfStock {
+  opacity: 0.65;
+  cursor: not-allowed !important;
+  filter: grayscale(40%);
+  position: relative;
+}
+.outOfStock:hover {
+  transform: none !important;
+  box-shadow: var(--shadow);
+}
+.stockOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.stockOverlayText {
+  background: var(--red);
+  color: #fff;
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.5rem;
+  font-weight: 800;
+  font-size: 0.875rem;
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
+}

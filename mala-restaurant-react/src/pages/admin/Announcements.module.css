@@ -1,0 +1,1780 @@
+/* Modern Announcements.module.css */
+
+.container {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.announcementsHeader {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-radius: 20px;
+  color: white;
+  padding: 2rem;
+  margin: 1.5rem;
+  margin-top: 1rem;
+  box-shadow: 0 10px 25px rgba(220, 38, 38, 0.2);
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.headerMain h1.pageTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.titleIcon {
+  font-size: 2.2rem;
+}
+
+.pageSubtitle {
+  margin: 0;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.headerActions {
+  display: flex;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.createButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.createButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.announcementsContent {
+  padding: 1.5rem;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 2rem;
+  align-items: start;
+}
+
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #dc2626;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #ef4444;
+  background: #fef2f2;
+  border-radius: 12px;
+  border: 1px solid #fecaca;
+  margin: 2rem;
+}
+
+.errorState svg {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.announcementsList {
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.listHeader {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.listTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.listIcon {
+  font-size: 1.25rem;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  padding: 0.5rem;
+  border-radius: 10px;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.emptyIcon {
+  font-size: 4rem;
+  color: #d1d5db;
+  margin-bottom: 1.5rem;
+}
+
+.emptyState h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: #374151;
+}
+
+.emptyState p {
+  margin: 0 0 2rem 0;
+  font-size: 1rem;
+}
+
+.emptyButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.emptyButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+}
+
+.announcementsGrid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.announcementCard {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.announcementCard:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.cardTitle {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cardTitle h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.3;
+}
+
+.cardStatus {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.statusBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.statusBadge.active {
+  background: rgba(34, 197, 94, 0.1);
+  color: #059669;
+}
+
+.statusBadge.inactive {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.statusBadge:hover {
+  transform: scale(1.05);
+}
+
+.cardActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.editButton, .deleteButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.editButton {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
+.editButton:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: scale(1.1);
+}
+
+.deleteButton {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.deleteButton:hover {
+  background: rgba(239, 68, 68, 0.2);
+  transform: scale(1.1);
+}
+
+.cardImage {
+  margin-bottom: 1rem;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.cardImage img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.cardBody {
+  margin-bottom: 1rem;
+}
+
+.cardDescription {
+  margin: 0;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.cardFooter {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 1rem;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.metaIcon {
+  color: #dc2626;
+}
+
+.editorPanel {
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  position: sticky;
+  top: 2rem;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+}
+
+.editorHeader {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.editorTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.editorIcon {
+  font-size: 1.25rem;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  padding: 0.5rem;
+  border-radius: 10px;
+}
+
+.editorForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.labelIcon {
+  font-size: 0.875rem;
+  color: #dc2626;
+}
+
+.formInput, .formTextarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  background: white;
+  box-sizing: border-box;
+}
+
+.formInput:focus, .formTextarea:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.formTextarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+
+.imageUploadSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.uploadArea {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  background: #f9fafb;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.uploadArea:hover {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.fileInput {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.uploadLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.uploadIcon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: white;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.uploadSpinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.uploadText {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.uploadTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.uploadSubtext {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.urlInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.urlLabel {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.urlInput {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  box-sizing: border-box;
+}
+
+.urlInput:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+}
+
+.imagePreview {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.imagePreview img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.removeImageButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 32px;
+  height: 32px;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.removeImageButton:hover {
+  background: rgba(239, 68, 68, 1);
+  transform: scale(1.1);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.checkboxLabel:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.checkboxText {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.checkboxIcon {
+  color: #dc2626;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.saveButton, .cancelButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  flex: 1;
+  justify-content: center;
+}
+
+.saveButton {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.saveButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cancelButton {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.cancelButton:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  animation: backdropFadeIn 0.3s ease-out;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+.previewModal {
+  background: white;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(15, 23, 42, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modalHeader {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.closeButton {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.modalBody {
+  padding: 2rem;
+  text-align: center;
+}
+
+.modalBody img {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+/* ========== COMPREHENSIVE RESPONSIVE DESIGN ========== */
+
+/* Large screens (Desktop) - 1200px+ */
+@media (min-width: 1200px) {
+  .container {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  
+  .announcementsHeader {
+    padding: 2.5rem;
+    margin: 2rem;
+  }
+  
+  .headerContent {
+    gap: 2.5rem;
+  }
+  
+  .headerMain h1.pageTitle {
+    font-size: 2.75rem;
+    gap: 0.875rem;
+  }
+  
+  .titleIcon {
+    font-size: 2.5rem;
+  }
+  
+  .pageSubtitle {
+    font-size: 1.2rem;
+  }
+  
+  .announcementsContent {
+    padding: 2rem;
+  }
+  
+  .contentGrid {
+    grid-template-columns: 1fr 450px;
+    gap: 2.5rem;
+  }
+  
+  .announcementsList, .editorPanel {
+    padding: 2rem;
+    border-radius: 20px;
+  }
+  
+  .announcementsGrid {
+    gap: 2rem;
+  }
+  
+  .announcementCard {
+    padding: 2rem;
+    border-radius: 18px;
+  }
+}
+
+/* Medium-Large screens (Tablet landscape) - 1024px to 1199px */
+@media (max-width: 1199px) and (min-width: 1025px) {
+  .announcementsHeader {
+    padding: 2.25rem;
+    margin: 1.75rem;
+  }
+  
+  .headerMain h1.pageTitle {
+    font-size: 2.5rem;
+  }
+  
+  .titleIcon {
+    font-size: 2.2rem;
+  }
+  
+  .announcementsContent {
+    padding: 1.75rem;
+  }
+  
+  .contentGrid {
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+  }
+  
+  .announcementsList, .editorPanel {
+    padding: 1.75rem;
+  }
+  
+  .announcementsGrid {
+    gap: 1.75rem;
+  }
+  
+  .announcementCard {
+    padding: 1.75rem;
+  }
+}
+
+/* Medium screens (Tablet portrait) - 768px to 1024px */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .announcementsHeader {
+    padding: 2rem;
+    margin: 1.5rem;
+  }
+  
+  .headerContent {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  
+  .headerMain h1.pageTitle {
+    font-size: 2.25rem;
+  }
+  
+  .titleIcon {
+    font-size: 2rem;
+  }
+  
+  .pageSubtitle {
+    font-size: 1rem;
+  }
+  
+  .headerActions {
+    align-self: stretch;
+    justify-content: center;
+  }
+  
+  .createButton {
+    padding: 0.875rem 2rem;
+    width: 100%;
+    max-width: 300px;
+    justify-content: center;
+  }
+  
+  .announcementsContent {
+    padding: 1.5rem;
+  }
+  
+  .contentGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .editorPanel {
+    position: static;
+    max-height: none;
+    order: 2;
+  }
+  
+  .announcementsList {
+    order: 1;
+  }
+  
+  .announcementsGrid {
+    gap: 1.5rem;
+  }
+  
+  .announcementCard {
+    padding: 1.5rem;
+  }
+  
+  .cardHeader {
+    gap: 1.25rem;
+  }
+  
+  .editButton, .deleteButton {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Small-Medium screens (Mobile landscape, small tablets) - 481px to 768px */
+@media (max-width: 768px) and (min-width: 481px) {
+  .announcementsHeader {
+    padding: 1.75rem;
+    margin: 1.25rem;
+    border-radius: 18px;
+  }
+  
+  .headerContent {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.25rem;
+  }
+  
+  .headerMain h1.pageTitle {
+    font-size: 2rem;
+    justify-content: center;
+  }
+  
+  .titleIcon {
+    font-size: 1.75rem;
+  }
+  
+  .pageSubtitle {
+    font-size: 0.95rem;
+  }
+  
+  .headerActions {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .createButton {
+    padding: 0.75rem 1.75rem;
+    width: 100%;
+    max-width: 280px;
+    justify-content: center;
+  }
+  
+  .announcementsContent {
+    padding: 1.25rem;
+  }
+  
+  .contentGrid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  
+  .announcementsList, .editorPanel {
+    padding: 1.5rem;
+    border-radius: 16px;
+  }
+  
+  .editorPanel {
+    position: static;
+    max-height: none;
+    order: 2;
+  }
+  
+  .listTitle {
+    font-size: 1.375rem;
+  }
+  
+  .listIcon {
+    font-size: 1.125rem;
+    padding: 0.625rem;
+  }
+  
+  .announcementsGrid {
+    gap: 1.25rem;
+  }
+  
+  .announcementCard {
+    padding: 1.375rem;
+    border-radius: 14px;
+  }
+  
+  .cardHeader {
+    gap: 1rem;
+  }
+  
+  .cardTitle h3 {
+    font-size: 1.125rem;
+  }
+  
+  .editButton, .deleteButton {
+    width: 38px;
+    height: 38px;
+  }
+  
+  .formField {
+    margin-bottom: 1.25rem;
+  }
+  
+  .formLabel {
+    font-size: 0.95rem;
+  }
+  
+  .formInput, .formTextarea, .formSelect {
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
+  
+  .uploadLabel {
+    padding: 2rem 1.5rem;
+  }
+  
+  .uploadIcon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+  
+  .formActions {
+    gap: 1rem;
+  }
+  
+  .primaryButton, .secondaryButton {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* Small screens (Mobile portrait) - 320px to 480px */
+@media (max-width: 480px) {
+  .announcementsHeader {
+    padding: 1.5rem;
+    margin: 1rem;
+    border-radius: 16px;
+  }
+  
+  .headerContent {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .headerMain h1.pageTitle {
+    font-size: 1.75rem;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .titleIcon {
+    font-size: 1.5rem;
+  }
+  
+  .pageSubtitle {
+    font-size: 0.875rem;
+  }
+  
+  .headerActions {
+    width: 100%;
+  }
+  
+  .createButton {
+    padding: 0.75rem 1.5rem;
+    width: 100%;
+    justify-content: center;
+    font-size: 0.9rem;
+  }
+  
+  .announcementsContent {
+    padding: 1rem;
+  }
+  
+  .contentGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .announcementsList, .editorPanel {
+    padding: 1rem;
+    border-radius: 14px;
+  }
+  
+  .editorPanel {
+    position: static;
+    max-height: none;
+    order: 2;
+  }
+  
+  .listHeader {
+    margin-bottom: 1rem;
+    padding-bottom: 0.875rem;
+  }
+  
+  .listTitle {
+    font-size: 1.25rem;
+    gap: 0.625rem;
+  }
+  
+  .listIcon {
+    font-size: 1rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+  }
+  
+  .announcementsGrid {
+    gap: 1rem;
+  }
+  
+  .announcementCard {
+    padding: 1.25rem;
+    border-radius: 12px;
+  }
+  
+  .cardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.875rem;
+  }
+  
+  .cardStatus {
+    align-self: flex-start;
+  }
+  
+  .cardActions {
+    align-self: flex-end;
+    gap: 0.625rem;
+  }
+  
+  .cardTitle h3 {
+    font-size: 1.125rem;
+    line-height: 1.4;
+  }
+  
+  .editButton, .deleteButton {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+  
+  .statusBadge {
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8rem;
+  }
+  
+  .formField {
+    margin-bottom: 1rem;
+  }
+  
+  .formLabel {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .formInput, .formTextarea, .formSelect {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    border-radius: 10px;
+  }
+  
+  .formTextarea {
+    min-height: 100px;
+  }
+  
+  .uploadLabel {
+    padding: 1.5rem 1rem;
+    border-radius: 12px;
+  }
+  
+  .uploadIcon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .uploadText {
+    font-size: 0.9rem;
+  }
+  
+  .uploadHint {
+    font-size: 0.8rem;
+  }
+  
+  .formActions {
+    flex-direction: column;
+    gap: 0.875rem;
+  }
+  
+  .primaryButton, .secondaryButton {
+    padding: 0.875rem;
+    font-size: 0.9rem;
+    border-radius: 10px;
+    width: 100%;
+  }
+  
+  .emptyState {
+    padding: 3rem 1.5rem;
+  }
+  
+  .emptyIcon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+  
+  .emptyState h3 {
+    font-size: 1.25rem;
+  }
+  
+  .emptyState p {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .emptyButton {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    width: 100%;
+    max-width: 250px;
+  }
+  
+  .previewModal {
+    width: 95%;
+    margin: 1rem;
+    border-radius: 16px;
+  }
+  
+  .modalHeader {
+    padding: 1.25rem 1.5rem;
+  }
+  
+  .modalHeader h3 {
+    font-size: 1.125rem;
+  }
+  
+  .modalBody {
+    padding: 1.5rem;
+  }
+  
+  .loadingState, .errorState {
+    padding: 3rem 1.5rem;
+  }
+  
+  .errorState svg {
+    font-size: 2.5rem;
+  }
+}
+
+/* Extra small screens (Very small mobile devices) - 320px and below */
+@media (max-width: 375px) {
+  .announcementsHeader {
+    padding: 1.25rem;
+    margin: 0.875rem;
+  }
+  
+  .headerMain h1.pageTitle {
+    font-size: 1.5rem;
+    gap: 0.375rem;
+  }
+  
+  .titleIcon {
+    font-size: 1.25rem;
+  }
+  
+  .pageSubtitle {
+    font-size: 0.8rem;
+  }
+  
+  .createButton {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.85rem;
+  }
+  
+  .announcementsContent {
+    padding: 0.875rem;
+  }
+  
+  .announcementsList, .editorPanel {
+    padding: 0.875rem;
+  }
+  
+  .listTitle {
+    font-size: 1.125rem;
+  }
+  
+  .announcementCard {
+    padding: 1rem;
+  }
+  
+  .cardTitle h3 {
+    font-size: 1rem;
+  }
+  
+  .editButton, .deleteButton {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .statusBadge {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+  }
+  
+  .formInput, .formTextarea, .formSelect {
+    padding: 0.625rem;
+    font-size: 0.85rem;
+  }
+  
+  .uploadLabel {
+    padding: 1.25rem 0.875rem;
+  }
+  
+  .uploadIcon {
+    width: 36px;
+    height: 36px;
+    font-size: 0.875rem;
+  }
+  
+  .primaryButton, .secondaryButton {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+  
+  .emptyState {
+    padding: 2.5rem 1.25rem;
+  }
+  
+  .emptyIcon {
+    font-size: 2.5rem;
+  }
+  
+  .emptyState h3 {
+    font-size: 1.125rem;
+  }
+  
+  .modalHeader {
+    padding: 1rem 1.25rem;
+  }
+  
+  .modalBody {
+    padding: 1.25rem;
+  }
+}
+
+/* Ultra small screens (320px and below) */
+@media (max-width: 320px) {
+  .announcementsHeader {
+    padding: 1rem;
+    margin: 0.75rem;
+  }
+  
+  .headerMain h1.pageTitle {
+    font-size: 1.375rem;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .titleIcon {
+    font-size: 1.375rem;
+  }
+  
+  .pageSubtitle {
+    font-size: 0.75rem;
+  }
+  
+  .createButton {
+    padding: 0.625rem 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .announcementsContent {
+    padding: 0.75rem;
+  }
+  
+  .announcementsList, .editorPanel {
+    padding: 0.75rem;
+  }
+  
+  .listTitle {
+    font-size: 1rem;
+  }
+  
+  .announcementCard {
+    padding: 0.875rem;
+  }
+  
+  .cardTitle h3 {
+    font-size: 0.95rem;
+  }
+  
+  .editButton, .deleteButton {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .formInput, .formTextarea, .formSelect {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .primaryButton, .secondaryButton {
+    padding: 0.625rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* ========== LANDSCAPE ORIENTATION SUPPORT ========== */
+
+/* Mobile landscape (phones in landscape) */
+@media (max-height: 500px) and (orientation: landscape) and (max-width: 896px) {
+  .announcementsHeader {
+    padding: 1rem 1.5rem;
+    margin: 0.75rem;
+  }
+  
+  .headerContent {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    gap: 1rem;
+  }
+  
+  .headerMain h1.pageTitle {
+    font-size: 1.375rem;
+    margin-bottom: 0;
+  }
+  
+  .pageSubtitle {
+    display: none; /* Hide subtitle in landscape to save space */
+  }
+  
+  .createButton {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    width: auto;
+  }
+  
+  .announcementsContent {
+    padding: 0.75rem;
+  }
+  
+  .contentGrid {
+    grid-template-columns: 1fr 300px;
+    gap: 1rem;
+  }
+  
+  .editorPanel {
+    position: static;
+    max-height: 60vh;
+    overflow-y: auto;
+    order: 2;
+  }
+  
+  .announcementsList {
+    order: 1;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  
+  .announcementsGrid {
+    gap: 0.875rem;
+  }
+  
+  .announcementCard {
+    padding: 1rem;
+  }
+  
+  .cardHeader {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .cardTitle h3 {
+    font-size: 1rem;
+  }
+  
+  .emptyState {
+    padding: 2rem 1rem;
+  }
+  
+  .emptyIcon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* Tablet landscape (larger landscape screens) */
+@media (min-height: 501px) and (orientation: landscape) and (min-width: 897px) and (max-width: 1366px) {
+  .headerContent {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+  }
+  
+  .contentGrid {
+    grid-template-columns: 1fr 400px;
+    gap: 1.5rem;
+  }
+  
+  .editorPanel {
+    position: static;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  .announcementsList {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+}
+
+/* Very short landscape screens */
+@media (max-height: 400px) and (orientation: landscape) {
+  .announcementsHeader {
+    padding: 0.75rem 1.25rem;
+    margin: 0.5rem;
+  }
+  
+  .headerMain h1.pageTitle {
+    font-size: 1.25rem;
+  }
+  
+  .titleIcon {
+    font-size: 1.125rem;
+  }
+  
+  .pageSubtitle {
+    display: none;
+  }
+  
+  .createButton {
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8rem;
+  }
+  
+  .announcementsContent {
+    padding: 0.5rem;
+  }
+  
+  .contentGrid {
+    grid-template-columns: 1fr 250px;
+    gap: 0.75rem;
+  }
+  
+  .announcementsList, .editorPanel {
+    padding: 0.75rem;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+  
+  .announcementsGrid {
+    gap: 0.5rem;
+  }
+  
+  .announcementCard {
+    padding: 0.75rem;
+  }
+  
+  .cardTitle h3 {
+    font-size: 0.95rem;
+  }
+  
+  .editButton, .deleteButton {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .formField {
+    margin-bottom: 0.75rem;
+  }
+  
+  .formInput, .formTextarea, .formSelect {
+    padding: 0.5rem;
+  }
+  
+  .emptyState {
+    padding: 1.5rem 1rem;
+  }
+}
+
+/* ========== ACCESSIBILITY & PERFORMANCE ENHANCEMENTS ========== */
+
+/* Touch-friendly enhancements */
+@media (pointer: coarse) {
+  .createButton, .editButton, .deleteButton, .statusBadge {
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  
+  .announcementCard {
+    touch-action: manipulation;
+  }
+  
+  /* Improve scroll performance */
+  .announcementsList, .editorPanel, .modalBody {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .announcementsHeader, .announcementsList, .editorPanel, .announcementCard {
+    border: 3px solid #000;
+  }
+  
+  .createButton, .editButton, .deleteButton, .primaryButton, .secondaryButton {
+    border: 2px solid;
+  }
+  
+  .statusBadge {
+    border: 1px solid #000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .announcementCard, .createButton, .editButton, .deleteButton, .statusBadge {
+    animation: none;
+    transition: none;
+  }
+  
+  .announcementCard:hover, .createButton:hover {
+    transform: none;
+  }
+  
+  .spinner {
+    animation: none;
+  }
+  
+  .modalSlideIn {
+    animation: none;
+  }
+  
+  .previewModal {
+    animation: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .container {
+    background-color: #111827;
+    color: #f9fafb;
+  }
+  
+  .announcementsHeader {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  }
+  
+  .announcementsList, .editorPanel {
+    background: #1f2937;
+    border-color: #374151;
+  }
+  
+  .announcementCard {
+    background: #111827;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .announcementCard:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  }
+  
+  .cardTitle h3 {
+    color: #f9fafb;
+  }
+  
+  .formInput, .formTextarea, .formSelect {
+    background: #111827;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .formInput:focus, .formTextarea:focus, .formSelect:focus {
+    border-color: #dc2626;
+    background: #1f2937;
+  }
+  
+  .uploadLabel {
+    background: #1f2937;
+    border-color: #374151;
+    color: #e5e7eb;
+  }
+  
+  .uploadLabel:hover {
+    background: #111827;
+    border-color: #dc2626;
+  }
+  
+  .emptyState {
+    color: #9ca3af;
+  }
+  
+  .emptyState h3 {
+    color: #e5e7eb;
+  }
+  
+  .errorState {
+    background: #1f1f23;
+    border-color: #374151;
+    color: #ef4444;
+  }
+  
+  .previewModal {
+    background: #1f2937;
+    color: #f9fafb;
+  }
+  
+  .modalBody img {
+    border-color: #374151;
+  }
+}
+
+/* Print styles */
+@media print {
+  .headerActions, .cardActions, .formActions {
+    display: none;
+  }
+  
+  .container {
+    background: white;
+  }
+  
+  .announcementsHeader, .announcementsList, .editorPanel, .announcementCard {
+    background: white;
+    box-shadow: none;
+    border: 1px solid #ccc;
+    break-inside: avoid;
+  }
+  
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .editorPanel {
+    display: none;
+  }
+  
+  .announcementCard {
+    margin-bottom: 1rem;
+  }
+  
+  .statusBadge {
+    border: 1px solid #000;
+  }
+}

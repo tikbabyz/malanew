@@ -1,0 +1,47 @@
+/* Clock Widget */
+.clockWidget {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.clockWidget:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.widgetIcon {
+  color: #fbbf24;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(251, 191, 36, 0.2);
+  border-radius: 8px;
+}
+
+.clockDisplay {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeDisplay {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+}
+
+.dateDisplay {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
