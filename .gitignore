@@ -29,3 +29,5 @@ orders.json
 mala-backend-ai/uploads/
 orders.json
 mala-backend-ai/uploads/
+
+!mala-backend-ai/uploads/.gitkeep
