@@ -31,3 +31,4 @@ orders.json
 mala-backend-ai/uploads/
 
 !mala-backend-ai/uploads/.gitkeep
+.env
