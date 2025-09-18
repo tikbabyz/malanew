@@ -25,3 +25,5 @@ venv/
 Thumbs.db
 .vscode/
 .idea/
+orders.json
+mala-backend-ai/uploads/
