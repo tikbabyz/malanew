@@ -1680,7 +1680,7 @@
   
   .searchInput:focus, .filterSelect:focus {
     border-color: #dc2626;
-    background: #000;
+    background: #111827; /* เปลี่ยนกลับเป็นสีเทาเข้ม */
   }
   
   .guideCard {

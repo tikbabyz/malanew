@@ -1,18 +1,24 @@
-// src/components/Protected.jsx
-import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
-import { useAuthStore } from "../store/auth.js";
+// Protected.jsx
+import { Navigate, useLocation } from 'react-router-dom'
+import usePermissions from '../hooks/usePermissions'
 
-export default function Protected({ roles = [], children }) {
-  const { user } = useAuthStore();
-  const location = useLocation();
+
+export default function Protected({ children, require }) {
+  const location = useLocation()
+  const { user, isAdmin, hasPermission, hasAllPermissions } = usePermissions()
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
-  if (roles.length && !roles.includes(user.role)) {
-    return <div style={{ padding: 24 }}>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</div>;
+
+  const ok = isAdmin() ||
+             (Array.isArray(require)
+               ? hasAllPermissions(require)
+               : (require ? hasPermission(require) : true))
+
+  if (!ok) {
+    return <NoAccess required={require} />   // หน้าที่แสดง "ต้องการสิทธิ์: pos"
   }
-  return children;
+
+  return children
 }
- 

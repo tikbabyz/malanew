@@ -1,5 +1,13 @@
 from pathlib import Path
-import os, base64, cv2, numpy as np, json, uuid, mimetypes, hashlib
+import os, base64, json, uuid, mimetypes, hashlib
+# Temporary: Skip AI libraries
+try:
+    import cv2, numpy as np
+    AI_AVAILABLE = True
+except ImportError:
+    cv2, np = None, None
+    AI_AVAILABLE = False
+    print("⚠️ AI libraries not available - some features disabled")
 from datetime import datetime, timezone
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
@@ -11,12 +19,41 @@ def abs_url_for(endpoint, **values):
     return f"{host}{rel}"
 from flask_cors import CORS
 app = Flask(__name__)
-CORS(app)
-from ultralytics import YOLO
-from PIL import Image, ImageOps
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.dialects.postgresql import JSONB
+
+
+
+# อนุญาต CORS จากทั้ง localhost และ IP network
 from flask_cors import CORS
+
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            r"https://.*\.ngrok\.app",   # ครอบคลุมทุกโดเมน ngrok
+        ],
+        "methods": ["GET","POST","PUT","DELETE","OPTIONS"],
+        "allow_headers": ["Content-Type","Authorization"],
+    }
+})
+
+# optional: ช่วยตอบ preflight เร็ว ๆ
+@app.route("/api/<path:_any>", methods=["OPTIONS"])
+def _cors_preflight(_any):
+    return ("", 204)
+
+
+# Re-add necessary imports
+try:
+    from ultralytics import YOLO
+    from PIL import Image, ImageOps
+    from flask_sqlalchemy import SQLAlchemy
+    from sqlalchemy.dialects.postgresql import JSONB
+    IMPORTS_AVAILABLE = True
+except ImportError:
+    YOLO, Image, ImageOps, SQLAlchemy, JSONB = None, None, None, None, None
+    IMPORTS_AVAILABLE = False
+    print("⚠️ Some libraries not available - features will be limited")
 
 # รองรับ HEIC/HEIF (ถ้ามีการติดตั้ง pillow-heif)
 try:
@@ -68,9 +105,7 @@ if not os.path.isabs(MODEL_PATH):
     MODEL_PATH = str((BASE_DIR / MODEL_PATH).resolve())
 
 # ---------- APP ----------
-app = Flask(__name__)
-# อนุญาต CORS ทั้งหมด (แก้ตามต้องการ)
-CORS(app)
+# Flask app already created above, don't duplicate
 # ขนาดอัปโหลดสูงสุด (กันพลาดไฟล์ใหญ่เกิน)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 # === DB setup (ADD) ===
@@ -102,10 +137,14 @@ MEMORY_STORAGE = {
         {"id": 1, "username": "admin", "password": "admin123", "role": "ADMIN", "name": "ผู้ดูแลระบบ", "active": True, "phone": "", "email": "", "perms": ["pos", "products", "users", "announcements", "reports"]},
         {"id": 2, "username": "staff", "password": "123456", "role": "STAFF", "name": "พนักงานหน้าร้าน", "active": True, "phone": "", "email": "", "perms": ["pos", "products"]}
     ],
-    "products": [],
+    "products": [
+        {"id": 1, "name": "หม่าล่าหมูสไลด์", "price": 189, "image": "product_20250914_003612_LINE_ALBUM_31768_250904_3.jpg"},
+        {"id": 2, "name": "เห็ดโคนสด", "price": 129, "image": "product_20250914_011000_chutima2.jpg"},
+        {"id": 3, "name": "เต้าหู้สด", "price": 89, "image": "product_20250918_000617_taohuu.jpg"}
+    ],
     "announcements": [],
     "orders": [],
-    "next_ids": {"user": 3, "product": 1, "announcement": 1, "order": 1}
+    "next_ids": {"user": 3, "product": 4, "announcement": 1, "order": 1}
 }
 # --- PaymentSettings Model ---
 class PaymentSettings(db.Model):
@@ -405,12 +444,21 @@ def api_payment_settings():
         db.session.commit()
         return jsonify({"success": True})
 # ✅ Serve product images
-@app.get("/api/products/images/<filename>")
+@app.route("/api/products/images/<filename>")
 def serve_product_image(filename):
     try:
         return send_from_directory(str(PRODUCTS_UPLOAD_DIR), filename)
     except Exception as e:
         print(f"❌ Error serving product image: {e}")
+        return jsonify({"error": "ไม่พบไฟล์รูปภาพ"}), 404
+
+# ✅ Alternative route for uploads folder
+@app.route("/uploads/products/<filename>")
+def serve_uploads_product(filename):
+    try:
+        return send_from_directory(str(PRODUCTS_UPLOAD_DIR), filename)
+    except Exception as e:
+        print(f"❌ Error serving uploads image: {e}")
         return jsonify({"error": "ไม่พบไฟล์รูปภาพ"}), 404
 
 # ✅ Upload QR Code endpoint
@@ -1329,6 +1377,11 @@ RANGES = {
     "green":  [(45, SV_MIN, SV_MIN, 85, 255, 255)],
     "blue":   [(100, SV_MIN, SV_MIN, 130, 255, 255)],
     "purple": [(130, max(30,SV_MIN-10), max(30,SV_MIN-10), 155, 255, 255)],
+    "pink":   [(140, SV_MIN, SV_MIN, 170, 255, 255)],
+}
+
+CENTERS_LAB = {
+    "red":    np.array([60,   80,  40]),
     "green":  np.array([70,  -60,  60]),
     "blue":   np.array([35,   20, -60]),
     "purple": np.array([45,   60, -35]),

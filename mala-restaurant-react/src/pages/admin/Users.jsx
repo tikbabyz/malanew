@@ -1,6 +1,5 @@
 import React from 'react'
 import { useDataStore } from '../../store/data.js'
-import AdminNavigation from '../../components/AdminNavigation.jsx'
 import ConfirmModal from '../../components/ConfirmModal.jsx'
 import styles from './Users.module.css'
 import { makePasswordHash } from '../../utils/hash.js'
@@ -47,8 +46,30 @@ const permsFromRole = (role) => {
   return Object.fromEntries(PERMISSIONS.map(p => [p.key, set.has(p.key)]))
 }
 
-const tagsFromPerms = (perms = {}) =>
-  PERMISSIONS.filter(p => perms[p.key]).map(p => p.label)
+const normalizePermsObj = (perms, role) => {
+  if (typeof perms === 'string') {
+    try { perms = JSON.parse(perms) } catch { perms = null }
+  }
+  if (Array.isArray(perms)) {
+    return Object.fromEntries(PERMISSIONS.map(p => [p.key, perms.includes(p.key)]))
+  }
+  if (perms && typeof perms === 'object') return perms
+  return permsFromRole(role || 'STAFF')
+}
+const tagsFromPerms = (perms) => {
+  if (typeof perms === 'string') {
+    try { perms = JSON.parse(perms) } catch { perms = {} }
+  }
+  if (Array.isArray(perms)) {
+    return PERMISSIONS.filter(p => perms.includes(p.key)).map(p => p.label)
+  }
+  if (perms && typeof perms === 'object') {
+    return PERMISSIONS.filter(p => !!perms[p.key]).map(p => p.label)
+  }
+  return []
+}
+
+
 
 export default function Users(){
   const { users, addUser, updateUser, deleteUser, loadUsers } = useDataStore()
@@ -82,6 +103,17 @@ export default function Users(){
     loadInitialData()
   }, [])
 
+  /** ========= password strength checker ========= */
+const strongPasswordIssues = (pwd='') => {
+  const fail = [];
+  if (pwd.length < 8) fail.push("อย่างน้อย 8 ตัว");
+  if (!/[A-Z]/.test(pwd)) fail.push("มี A-Z");
+  if (!/[a-z]/.test(pwd)) fail.push("มี a-z");
+  if (!/[0-9]/.test(pwd)) fail.push("มีเลข 0-9");
+  if (!/[^A-Za-z0-9]/.test(pwd)) fail.push("มีอักขระพิเศษ");
+  return fail;
+};
+
   /** ========= validate ========= */
   const validate = () => {
     const e = {}
@@ -89,6 +121,13 @@ export default function Users(){
     if (!editId && !form.password?.trim()) e.password = 'กรุณาตั้งรหัสผ่าน'
     if (!form.name?.trim()) e.name = 'กรุณากรอกชื่อ-นามสกุล'
     if (!form.role) e.role = 'กรุณาเลือกสิทธิ์การเข้าถึง'
+
+    // เช็คความปลอดภัยเฉพาะตอน "สร้างใหม่" หรือถ้ากรอกจะเปลี่ยนรหัส
+    if (!editId || form.password?.trim()) {
+      const issues = strongPasswordIssues(form.password || '')
+      if (issues.length) e.password = `รหัสผ่านไม่ปลอดภัย: ${issues.join(' · ')}`
+    }
+
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -126,13 +165,14 @@ export default function Users(){
     setEditId(u.id)
     setForm({
       username: u.username,
-      password: u.password || '',
+      password: '', // ไม่แสดงรหัสผ่านเดิม เพื่อความปลอดภัย
       name: u.name,
       role: u.role || 'STAFF',
       active: !!u.active,
       phone: u.phone || '',
       email: u.email || '',
-      perms: u.perms || permsFromRole(u.role || 'STAFF'),
+      perms: normalizePermsObj(u.perms, u.role),
+
     })
     setErrors({})
   }
@@ -144,7 +184,7 @@ export default function Users(){
     try {
       setLoading(true)
       setError('')
-      const payload = { ...form }
+      const payload = { ...form, perms: normalizePermsObj(form.perms, form.role) }
 
       if (editId) {
         const existing = (users || []).find(u => u.id === editId) || {}
@@ -182,10 +222,7 @@ export default function Users(){
     }))
 
   return(
-    <div className={styles.usersContainer}>
-      <AdminNavigation variant="horizontal" />
-      <AdminNavigation variant="breadcrumb" />
-      
+    <div className={styles.usersContainer}>      
       {/* Error Display */}
       {error && (
         <div className={styles.errorBanner}>
@@ -477,8 +514,7 @@ export default function Users(){
                   <td>{u.name}</td>
                   <td>{u.role === 'ADMIN' ? 'ผู้ดูแลระบบ' : 'พนักงาน'}</td>
                   <td>
-                    <div className={styles.permTags}>
-                      {(tagsFromPerms(u.perms || permsFromRole(u.role || 'STAFF'))).map((t,i)=>(
+                    <div className={styles.permTags}>{tagsFromPerms(normalizePermsObj(u.perms, u.role)).map((t,i)=>(
                         <span key={i} className={styles.tag}>{t}</span>
                       ))}
                     </div>
@@ -517,12 +553,13 @@ export default function Users(){
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
+        open={showDeleteModal}
+         onCancel={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteConfirm}
         title="ยืนยันการลบผู้ใช้งาน"
         message={`คุณแน่ใจหรือไม่ที่จะลบผู้ใช้งาน "${userToDelete?.name}" (${userToDelete?.username})?`}
-        variant="warning"
+        danger
+        icon="warning"
       />
     </div>
   )

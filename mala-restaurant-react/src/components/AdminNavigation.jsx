@@ -1,6 +1,7 @@
 // AdminNavigation.jsx - Modern Navigation Component for Admin Section
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, matchPath } from 'react-router-dom';
+
 import { 
   FaTachometerAlt, 
   FaBoxOpen, 
@@ -12,68 +13,88 @@ import {
   FaCog
 } from 'react-icons/fa';
 import styles from './AdminNavigation.module.css';
+import usePermissions from '../hooks/usePermissions.js';
 
 const ADMIN_MENU_ITEMS = [
   { 
     to: '/admin', 
     label: 'แดชบอร์ด', 
     icon: FaTachometerAlt,
-    description: 'ภาพรวมและสถิติ'
+    description: 'ภาพรวมและสถิติ',
+    permission: null // ทุกคนเข้าได้
   },
   { 
     to: '/admin/users', 
     label: 'จัดการผู้ใช้', 
     icon: FaUsers,
-    description: 'ผู้ใช้งานและสิทธิ์'
+    description: 'ผู้ใช้งานและสิทธิ์',
+    permission: 'users'
   },
   { 
     to: '/admin/products', 
     label: 'จัดการสินค้า', 
     icon: FaBoxOpen,
-    description: 'สินค้าและราคา'
+    description: 'สินค้าและราคา',
+    permission: 'products'
   },
   { 
     to: '/admin/payments', 
     label: 'การชำระเงิน', 
     icon: FaClipboardList,
-    description: 'รายการชำระเงิน'
+    description: 'รายการชำระเงิน',
+    permission: 'payments'
   },
   { 
     to: '/admin/announcements', 
     label: 'ประกาศ', 
     icon: FaTags,
-    description: 'ข่าวสารและโปรโมชั่น'
+    description: 'ข่าวสารและโปรโมชั่น',
+    permission: 'announcements'
   },
   { 
     to: '/admin/permissions', 
     label: 'สิทธิ์การใช้งาน', 
     icon: FaCog,
-    description: 'จัดการสิทธิ์'
+    description: 'จัดการสิทธิ์',
+    permission: 'users'
   }
 ];
 
 export default function AdminNavigation({ 
   variant = 'sidebar', // 'sidebar', 'horizontal', 'compact'
   showDescriptions = true,
+  isCompact = false,
+  isMobile = false,
   className = ''
 }) {
   const location = useLocation();
+  const { hasPermission } = usePermissions();
+  const [hoverId, setHoverId] = React.useState(null);
+  // Filter menu items based on permissions
+ const visibleMenuItems = React.useMemo(
+   () => ADMIN_MENU_ITEMS.filter(item => !item.permission || hasPermission(item.permission)),
+   [hasPermission]
+ );
 
-  const isActive = (path) => {
-    if (path === '/admin') {
-      return location.pathname === '/admin';
-    }
-    return location.pathname.startsWith(path);
-  };
+ const isActive = (to) => {
+   if (to === '/admin') {
+     return !!matchPath({ path: '/admin', end: true }, location.pathname);
+   }
+   // ให้ active กับเส้นทางย่อยทั้งหมดของเมนูนั้น
+   return !!matchPath({ path: `${to}/*`, end: false }, location.pathname);
+ };
 
-  const getBreadcrumb = () => {
-    const currentItem = ADMIN_MENU_ITEMS.find(item => 
-      item.to === '/admin' 
-        ? location.pathname === '/admin'
-        : location.pathname.startsWith(item.to)
-    );
-    return currentItem ? currentItem.label : 'Admin';
-  };
+ const getBreadcrumb = () => {
+   const current = visibleMenuItems.find(item =>
+     item.to === '/admin'
+       ? matchPath({ path: '/admin', end: true }, location.pathname)
+       : matchPath({ path: `${item.to}/*`, end: false }, location.pathname)
+   );
+   return current ? current.label : 'Admin';
+ };
+
+  const handleTooltipShow = (itemId) => isCompact && setHoverId(itemId);
+ const handleTooltipHide = () => isCompact && setHoverId(null);
 
   if (variant === 'breadcrumb') {
     return (
@@ -93,21 +114,22 @@ export default function AdminNavigation({
     return (
       <nav className={`${styles.horizontalNav} ${className}`}>
         <div className={styles.navScrollContainer}>
-          {ADMIN_MENU_ITEMS.map((item) => {
+          {visibleMenuItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.to);
             
             return (
-              <Link
+              <NavLink
                 key={item.to}
                 to={item.to}
-                className={`${styles.horizontalLink} ${active ? styles.active : ''}`}
+                className={({ isActive }) => `${styles.horizontalLink} ${isActive ? styles.active : ''}`}
                 title={item.description}
+                aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
               >
                 <Icon className={styles.linkIcon} />
                 <span className={styles.linkText}>{item.label}</span>
-                {active && <div className={styles.activeIndicator} />}
-              </Link>
+               aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
+              </NavLink>
             );
           })}
         </div>
@@ -117,42 +139,68 @@ export default function AdminNavigation({
 
   // Default sidebar variant
   return (
-    <nav className={`${styles.sidebar} ${variant === 'compact' ? styles.compact : ''} ${className}`}>
+   <nav
+   className={`${styles.sidebar} ${isCompact ? styles.compact : ''} ${isMobile ? styles.mobile : ''} ${className}`}
+   role="navigation"
+   aria-label="Admin navigation"
+>
       <div className={styles.sidebarHeader}>
         <div className={styles.adminBrand}>
           <div className={styles.brandIcon}>⚙️</div>
-          <div className={styles.brandText}>
-            <span className={styles.brandTitle}>ผู้ดูแลระบบ</span>
-            <span className={styles.brandSubtitle}>Mala Admin</span>
-          </div>
+          {(!isCompact || isMobile) && (
+            <div className={styles.brandText}>
+              <span className={styles.brandTitle}>ผู้ดูแลระบบ</span>
+              <span className={styles.brandSubtitle}>Mala Admin</span>
+            </div>
+          )}
         </div>
       </div>
 
       <div className={styles.navSection}>
-        <div className={styles.sectionTitle}>เมนูหลัก</div>
+        {(!isCompact || isMobile) && (
+          <div className={styles.sectionTitle}>เมนูหลัก</div>
+        )}
         <div className={styles.navItems}>
-          {ADMIN_MENU_ITEMS.map((item) => {
+          {visibleMenuItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.to);
             
             return (
-              <Link
+              <div 
                 key={item.to}
-                to={item.to}
-                className={`${styles.navLink} ${active ? styles.active : ''}`}
-                title={item.description}
+                className={styles.navItemWrapper}
+                onMouseEnter={() => handleTooltipShow(item.to)}
+                onMouseLeave={() => handleTooltipHide(item.to)}
               >
-                <div className={styles.linkIconContainer}>
-                  <Icon className={styles.linkIcon} />
-                </div>
-                <div className={styles.linkContent}>
-                  <span className={styles.linkText}>{item.label}</span>
-                  {showDescriptions && variant !== 'compact' && (
-                    <span className={styles.linkDescription}>{item.description}</span>
+                <Link
+                  to={item.to}
+                  className={`${styles.navLink} ${active ? styles.active : ''}`}
+                  title={item.description}
+                >
+                  <div className={styles.linkIconContainer}>
+                    <Icon className={styles.linkIcon} />
+                  </div>
+                  {(!isCompact || isMobile) && (
+                    <div className={styles.linkContent}>
+                      <span className={styles.linkText}>{item.label}</span>
+                      {showDescriptions && (
+                        <span className={styles.linkDescription}>{item.description}</span>
+                      )}
+                    </div>
                   )}
-                </div>
-                <FaChevronRight className={styles.linkArrow} />
-              </Link>
+                  {active && <div className={styles.activeIndicator} />}
+                </Link>
+                
+                {/* Tooltip for compact mode */}
+                {isCompact && !isMobile && hoverId === item.to && (
+                  <div className={styles.tooltip}>
+                    <div className={styles.tooltipContent}>
+                      <strong>{item.label}</strong>
+                      <span>{item.description}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

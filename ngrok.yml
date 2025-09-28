@@ -1,0 +1,10 @@
+version: "2"
+authtoken: 32t3kUvpUtzZaDFawm8eAeZVgyf_4XoCtaU161y2iqmAuqK5u
+
+tunnels:
+  frontend:
+    proto: http
+    addr: 5173   # frontend port (Next.js / React)
+  backend:
+    proto: http
+    addr: 8000   # backend port (API server)

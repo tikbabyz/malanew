@@ -1,34 +1,18 @@
-﻿# ---- Node/React
-node_modules/
-dist/
-.vite/
-build/
-_pycache__/
-*.pyc
-.venv/
+# === Backend (Python/Flask)
 venv/
-**/venv/
+__pycache__/
+*.pyc
+uploads/
+*.sqlite
 .env
-*.ipynb_checkpoints/
-*.pyd
-*.dll
-*.lib
-*.so
-*.dylib
-*.pt
-*.pth
-*.onnx
-*.tflite
+.env.*
 
-# ---- OS/IDE
+# === Frontend (Node/Vite)
+mala-restaurant-react/node_modules/
+mala-restaurant-react/dist/
+mala-restaurant-react/.env
+mala-restaurant-react/.env.*
+
+# OS/Editor junk
 .DS_Store
 Thumbs.db
-.vscode/
-.idea/
-orders.json
-mala-backend-ai/uploads/
-orders.json
-mala-backend-ai/uploads/
-
-!mala-backend-ai/uploads/.gitkeep
-.env

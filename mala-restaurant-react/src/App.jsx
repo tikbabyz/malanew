@@ -1,12 +1,13 @@
 // src/App.jsx
 import React, { Suspense, useEffect } from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "./store/auth.js";
 import { hydrateIfEmpty } from "./store/data.js";
 
 // Components
 import AppNav from "./components/AppNav.jsx";
 import Protected from "./components/Protected.jsx";
+import PermissionGuard from "./components/PermissionGuard.jsx";
 
 // Pages
 import Home from "./pages/public/Home.jsx";
@@ -15,14 +16,13 @@ import News from "./pages/public/News.jsx";
 import Login from "./pages/Login.jsx";
 
 // Staff Pages
-import POS from "./pages/staff/POS.jsx";
 import Billing from "./pages/staff/Billing.jsx";
 import Orders from "./pages/staff/Orders.jsx";
-import Detect from "./pages/staff/Detect.jsx";
 import WorkflowPOS from "./pages/staff/WorkflowPOS.jsx";
 
 // Admin Pages
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
+import AdminDashboard from "./pages/admin/Dashboard.jsx";
 import Users from "./pages/admin/Users.jsx";
 import Products from "./pages/admin/Products.jsx";
 import Permissions from "./pages/admin/Permissions.jsx";
@@ -46,8 +46,8 @@ function PageBreadcrumb() {
     if (path === '/news') return 'ข่าวสาร';
     if (path === '/login') return 'เข้าสู่ระบบ';
     if (path.startsWith('/staff')) {
-      if (path === '/staff/pos') return 'Staff › ระบบขาย';
-      if (path === '/staff/detect') return 'Staff › ตรวจจับ AI';
+      if (path === '/staff/pos') return 'Staff › ระบบขาย (เปลี่ยนเส้นทางไป Workflow)';
+      if (path === '/staff/detect') return 'Staff › ตรวจจับ AI (เปลี่ยนเส้นทางไป Workflow)';
       if (path === '/staff/billing') return 'Staff › ออกบิล';
       if (path === '/staff/orders') return 'Staff › คำสั่งซื้อ';
       if (path === '/staff/workflow') return 'Staff › ระบบขายแบบครบวงจร';
@@ -256,97 +256,99 @@ function App() {
                     <Route path="/news" element={<News />} />
                     <Route path="/login" element={<Login />} />
 
+                   // src/App.jsx (เฉพาะส่วนกำหนดเส้นทางที่ต้องมีสิทธิ์)
+
                     {/* Staff Routes */}
-                    <Route
-                      path="/staff/pos"
-                      element={
-                        <Protected roles={["STAFF"]}>
-                          <POS />
-                        </Protected>
-                      }
-                    />
-                    <Route
-                      path="/staff/detect"
-                      element={
-                        <Protected roles={["STAFF"]}>
-                          <Detect />
-                        </Protected>
-                      }
-                    />
                     <Route
                       path="/staff/billing"
                       element={
-                        <Protected roles={["STAFF"]}>
-                          <Billing />
-                        </Protected>
-                      }
-                    />
-                    <Route
-                      path="/staff/orders"
-                      element={
-                        <Protected roles={["STAFF"]}>
-                          <Orders />
-                        </Protected>
-                      }
-                    />
-                    <Route
-                      path="/staff/workflow"
-                      element={
-                        <Protected roles={["STAFF"]}>
-                          <WorkflowPOS />
+                        <Protected roles={["STAFF", "ADMIN"]}>
+                          <PermissionGuard permission="pos">
+                            <Billing />
+                          </PermissionGuard>
                         </Protected>
                       }
                     />
 
-                    {/* Admin Routes */}
+                    <Route
+                      path="/staff/orders"
+                      element={
+                        <Protected roles={["STAFF", "ADMIN"]}>
+                          <PermissionGuard permission="pos">
+                            <Orders />
+                          </PermissionGuard>
+                        </Protected>
+                      }
+                    />
+
+                    <Route
+                      path="/staff/workflow"
+                      element={
+                        <Protected roles={["STAFF", "ADMIN"]}>
+                          <PermissionGuard permission="pos">
+                            <WorkflowPOS />
+                          </PermissionGuard>
+                        </Protected>
+                      }
+                    />
+
+                    {/* Admin Routes (ตัวอย่างหน้าที่ล็อกตาม permission) */}
                     <Route
                       path="/admin"
                       element={
-                        <Protected roles={["ADMIN"]}>
+                        <Protected roles={["ADMIN", "STAFF"]}>
                           <AdminLayout />
                         </Protected>
                       }
-                    />
-                    <Route
-                      path="/admin/users"
-                      element={
-                        <Protected roles={["ADMIN"]}>
-                          <Users />
-                        </Protected>
-                      }
-                    />
-                    <Route
-                      path="/admin/products"
-                      element={
-                        <Protected roles={["ADMIN"]}>
-                          <Products />
-                        </Protected>
-                      }
-                    />
-                    <Route
-                      path="/admin/permissions"
-                      element={
-                        <Protected roles={["ADMIN"]}>
-                          <Permissions />
-                        </Protected>
-                      }
-                    />
-                    <Route
-                      path="/admin/announcements"
-                      element={
-                        <Protected roles={["ADMIN"]}>
-                          <Announcements />
-                        </Protected>
-                      }
-                    />
-                    <Route
-                      path="/admin/payments"
-                      element={
-                        <Protected roles={["ADMIN"]}>
-                          <Payments />
-                        </Protected>
-                      }
-                    />
+                    >
+                      <Route index element={<AdminDashboard />} />
+
+                      <Route
+                        path="users"
+                        element={
+                          <PermissionGuard permission="users">
+                            <Users />
+                          </PermissionGuard>
+                        }
+                      />
+
+                      <Route
+                        path="products"
+                        element={
+                          <PermissionGuard permission="products">
+                            <Products />
+                          </PermissionGuard>
+                        }
+                      />
+
+                      <Route
+                        path="permissions"
+                        element={
+                          <PermissionGuard permission="users">
+                            <Permissions />
+                          </PermissionGuard>
+                        }
+                      />
+
+                      <Route
+                        path="announcements"
+                        element={
+                          <PermissionGuard permission="announcements">
+                            <Announcements />
+                          </PermissionGuard>
+                        }
+                      />
+
+                      <Route
+                        path="payments"
+                        element={
+                          <PermissionGuard permission="reports">
+                            <Payments />
+                          </PermissionGuard>
+                        }
+                      />
+                    </Route>
+
 
                     {/* 404 Fallback */}
                     <Route 

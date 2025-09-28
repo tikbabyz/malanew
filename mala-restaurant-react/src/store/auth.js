@@ -16,95 +16,77 @@ export const useAuthStore = create((set, get) => ({
   },
 
   login: async ({ username, password }) => {
-    console.log('🔑 Auth store login called with:', { username, passwordLength: password.length });
-    
-    set({ isLoading: true });
-    
+    // เผื่อมีคนเรียก store ตรง ๆ โดยไม่ trim
+    const u = String(username || '').trim()
+    const p = String(password || '').trim()
+
+    set({ isLoading: true })
     try {
-      console.log('🌐 Attempting API login...');
-      
-      // ลองเรียก API ก่อน
-      const response = await API.login(username, password)
-      
-      console.log('✅ API login successful:', response);
-      
-      const userProfile = { 
-        id: response.id, 
-        username: response.username, 
-        role: response.role, 
-        name: response.name, 
-        permissions: response.perms || response.permissions || [] 
+      const res = await API.login(u, p)
+
+      const userProfile = {
+        id: res.id,
+        username: res.username,
+        role: res.role,
+        name: res.name,
+        // เก็บทั้งสองคีย์ให้ส่วนอื่นอ่านได้หมด
+        permissions: res.permissions ?? res.perms ?? [],
+        perms: res.perms ?? undefined,
       }
-      
-      console.log('💾 Saving user to store:', userProfile);
-      
-      // บันทึกข้อมูลผู้ใช้ลง localStorage และ state
       const { setUser } = get()
       setUser(userProfile)
-      
       return userProfile
+
     } catch (apiError) {
-      console.warn('⚠️ API login failed, trying localStorage fallback:', apiError.message);
-      
-      // ถ้า API fail ให้ fallback ไปใช้ localStorage
+      console.warn('⚠️ API login failed:', apiError?.message)
+
+      // error ประเภท credential → โยนคืนไปให้ Login.jsx จัดการใต้ช่อง
+      const msg = String(apiError?.message || '').toLowerCase()
+      const isCred =
+        msg.includes('รหัสผ่าน') ||
+        msg.includes('password') ||
+        msg.includes('ไม่พบ') ||
+        msg.includes('ผู้ใช้') ||
+        msg.includes('บัญชี') ||
+        msg.includes('user not found')
+
+      if (isCred) {
+        throw apiError
+      }
+
+      // อื่น ๆ → fallback โหมดออฟไลน์
       try {
-        console.log('💾 Attempting localStorage fallback...');
-        
-        const dataKey = 'mala_data_v1'
-        const dataRaw = localStorage.getItem(dataKey)
-        
-        console.log('📂 localStorage data exists:', !!dataRaw);
-        
-        if (!dataRaw) {
-          throw new Error('ไม่พบข้อมูลผู้ใช้ในระบบ')
-        }
-        
-        const data = JSON.parse(dataRaw)
+        const raw = localStorage.getItem('mala_data_v1')
+        if (!raw) throw new Error('ไม่พบข้อมูลผู้ใช้ในระบบ (โหมดออฟไลน์)')
+
+        const data = JSON.parse(raw)
         const users = data.users || []
-        
-        console.log('👥 Found users in localStorage:', users.length);
-        
-        const user = users.find(u => 
-          u.username === username && 
-          u.password === password && 
-          u.active === true
+        const localUser = users.find(
+          x => x.username === u && x.password === p && x.active === true
         )
-        
-        console.log('🔍 User found in localStorage:', !!user);
-        
-        if (!user) {
-          throw new Error('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง')
+        if (!localUser) throw new Error('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (โหมดออฟไลน์)')
+
+        const userProfile = {
+          id: localUser.id,
+          username: localUser.username,
+          role: localUser.role,
+          name: localUser.name,
+          permissions: localUser.permissions || localUser.perms || [],
+          perms: localUser.perms ?? undefined,
         }
-        
-        console.log('✅ localStorage user found:', user.username);
-        
-        const userProfile = { 
-          id: user.id, 
-          username: user.username, 
-          role: user.role, 
-          name: user.name, 
-          permissions: user.permissions || [] 
-        }
-        
-        console.log('💾 Saving localStorage user to store:', userProfile);
-        
-        // บันทึกข้อมูลผู้ใช้ลง localStorage และ state สำหรับ fallback
         const { setUser } = get()
         setUser(userProfile)
-        
         return userProfile
       } catch (localError) {
-        console.error('❌ localStorage fallback failed:', localError);
-        set({ isLoading: false });
-        throw new Error('เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ' + (localError.message || localError))
+        // โยนให้ UI แสดงข้อความรวม
+        throw localError
       }
     } finally {
-      set({ isLoading: false });
+      set({ isLoading: false })
     }
   },
 
   logout: () => {
-    console.log('🚪 Logout called - clearing user data');
     localStorage.removeItem(AUTH_KEY)
     set({ user: null, isLoading: false })
   },

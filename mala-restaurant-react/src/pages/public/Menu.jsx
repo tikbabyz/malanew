@@ -1,5 +1,6 @@
 import React from "react";
 import { useDataStore } from "../../store/data.js";
+import { getImageUrl } from "../../services/api.js";  // ✅ เพิ่ม import สำหรับ image URL
 import styles from "./Menu.module.css";
 import { Link } from "react-router-dom";
 import {
@@ -217,7 +218,7 @@ export default function Menu() {
                     <div className={styles.productImageContainer}>
                       {!hasImageError && product.image ? (
                         <img
-                          src={product.image}
+                          src={getImageUrl(product.image)}  // ✅ ใช้ getImageUrl แทน
                           alt={product.name}
                           className={styles.productImage}
                           loading="lazy"

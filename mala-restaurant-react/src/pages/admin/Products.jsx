@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useDataStore } from '../../store/data.js';
-import AdminNavigation from '../../components/AdminNavigation.jsx';
 import ConfirmModal from '../../components/ConfirmModal.jsx';
 import styles from './Products.module.css';
 import API, { API_BASE } from '../../services/api';
@@ -489,8 +488,6 @@ export default function Products() {
     <>
       <div className="pageBg">
         <div className={styles.container}>
-          <AdminNavigation variant="horizontal" />
-          
           {/* Header Section */}
           <div className={styles.productsHeader}>
             <div className={styles.headerContent}>

@@ -1,6 +1,5 @@
 // src/pages/admin/Announcements.jsx
 import React, { useState, useEffect } from 'react';
-import AdminNavigation from '../../components/AdminNavigation.jsx';
 import API, { API_BASE } from '../../services/api';
 import styles from './Announcements.module.css';
 import { 
@@ -192,8 +191,6 @@ export default function Announcements() {
     <>
       <div className="pageBg">
         <div className={styles.container}>
-          <AdminNavigation variant="horizontal" />
-          
           {/* Header Section */}
           <div className={styles.announcementsHeader}>
             <div className={styles.headerContent}>

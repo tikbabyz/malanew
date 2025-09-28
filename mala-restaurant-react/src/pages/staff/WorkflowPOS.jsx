@@ -33,10 +33,10 @@ import { API_PREFIX } from "../../services/api";
 // Constants
 const STORE_PROFILE = {
   name: "ร้านหม่าล่า",
-  address: "…",
-  phone: "044444444",
-  taxId: "…",
-  branch: "00000",
+  address: "123 ตำบลในเมือง อำเภอเมือง นครราชสีมา 30000",
+  phone: "0923799043",
+  taxId: "0123456789012"
+  
 };
 
 const LABEL_ALIASES = {
@@ -285,29 +285,80 @@ export default function WorkflowPOS() {
         cameraStream.getTracks().forEach(track => track.stop());
       }
       
+      // Check if we're on mobile
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
       const constraints = {
         video: { 
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          width: { ideal: isMobile ? 1280 : 1920 },
+          height: { ideal: isMobile ? 720 : 1080 },
           facingMode: facing
         }
       };
       
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      setCameraStream(stream);
-      setShowCamera(true);
-      setFacingMode(facing);
+      // For mobile, try to use specific camera constraints
+      if (isMobile && facing === 'environment') {
+        constraints.video = {
+          ...constraints.video,
+          facingMode: { exact: 'environment' }
+        };
+      }
       
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        setCameraStream(stream);
+        setShowCamera(true);
+        setFacingMode(facing);
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          // Add event listener to handle video load
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play().catch(err => {
+              console.error('Error playing video:', err);
+              setCameraError('ไม่สามารถเริ่มต้นกล้องได้ กรุณาลองใหม่');
+            });
+          };
+        }
+      } catch (specificErr) {
+        // Fallback for mobile if exact constraint fails
+        if (isMobile && facing === 'environment') {
+          console.warn('Exact environment camera failed, trying general constraint');
+          const fallbackConstraints = {
+            video: { 
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              facingMode: 'environment'
+            }
+          };
+          
+          const stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+          setCameraStream(stream);
+          setShowCamera(true);
+          setFacingMode(facing);
+          
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.onloadedmetadata = () => {
+              videoRef.current.play().catch(err => {
+                console.error('Error playing video:', err);
+                setCameraError('ไม่สามารถเริ่มต้นกล้องได้ กรุณาลองใหม่');
+              });
+            };
+          }
+        } else {
+          throw specificErr;
+        }
       }
     } catch (err) {
+      console.error('Camera error:', err);
       setCameraError(`ไม่สามารถเข้าถึงกล้องได้: ${err.message}`);
       if (err.name === 'NotAllowedError') {
-        setCameraError('กรุณาอนุญาตให้เว็บไซต์เข้าถึงกล้อง');
+        setCameraError('กรุณาอนุญาตให้เว็บไซต์เข้าถึงกล้อง ลองรีเฟรชหน้าแล้วเลือกอนุญาต');
       } else if (err.name === 'NotFoundError') {
         setCameraError('ไม่พบกล้องในอุปกรณ์นี้');
+      } else if (err.name === 'NotSupportedError') {
+        setCameraError('เบราว์เซอร์ไม่รองรับการใช้กล้อง');
       }
     }
   };
@@ -759,6 +810,39 @@ export default function WorkflowPOS() {
     setDrag(null);
   };
 
+  // Touch handlers for mobile cropping
+  const onTouchStart = (e) => {
+    e.preventDefault(); // ป้องกันการ scroll
+    if (e.touches && e.touches.length > 0 && imgRef.current) {
+      const touch = e.touches[0];
+      const r = imgRef.current.getBoundingClientRect();
+      setDrag({ 
+        x1: touch.clientX - r.left, 
+        y1: touch.clientY - r.top, 
+        x2: touch.clientX - r.left, 
+        y2: touch.clientY - r.top 
+      });
+    }
+  };
+
+  const onTouchMove = (e) => {
+    e.preventDefault(); // ป้องกันการ scroll
+    if (e.touches && e.touches.length > 0 && drag && imgRef.current) {
+      const touch = e.touches[0];
+      const r = imgRef.current.getBoundingClientRect();
+      setDrag((d) => ({ 
+        ...d, 
+        x2: touch.clientX - r.left, 
+        y2: touch.clientY - r.top 
+      }));
+    }
+  };
+
+  const onTouchEnd = (e) => {
+    e.preventDefault(); // ป้องกันการ scroll
+    onMouseUp(); // ใช้ logic เดียวกันกับ mouse
+  };
+
   // ในการสร้าง order หรือชำระเงิน ให้ใช้ยอดรวมหลังหักส่วนลด
   const getDiscountedTotal = () => {
     return +(totals.total * (1 - discount / 100)).toFixed(2);
@@ -969,22 +1053,31 @@ export default function WorkflowPOS() {
                 <h3 className={styles.sectionTitle}>อัปโหลดภาพ</h3>
                 
                 <div className={styles.fileUpload}>
+                  {/* ปุ่มเลือกจากแกลเลอรี่ (ไม่มี capture) */}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/heic,image/heif"
+                    onChange={onFile}
+                    className={styles.fileInput}
+                    id="gallery-upload"
+                  />
+                  <label htmlFor="gallery-upload" className={styles.fileUploadLabel}>
+                    📁 เลือกรูปจากแกลเลอรี่
+                  </label>
+                  
+                  {/* ปุ่มถ่ายรูปด้วยกล้อง (มี capture) */}
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/heic,image/heif"
                     capture="environment"
                     onChange={onFile}
                     className={styles.fileInput}
+                    id="camera-capture"
                   />
-                  
-                  <button
-                    type="button"
-                    className={styles.cameraBtn}
-                    onClick={() => startCamera()}
-                  >
+                  <label htmlFor="camera-capture" className={styles.cameraBtn}>
                     <FaCamera className={styles.btnIcon} />
                     ถ่ายภาพด้วยกล้อง
-                  </button>
+                  </label>
                 </div>
 
                 {cameraError && (
@@ -1026,11 +1119,17 @@ export default function WorkflowPOS() {
 
                 {preview && (
                   <div className={styles.previewSection}>
+                    <div className={styles.touchInstructions}>
+                      <span style={{ fontSize: '1.1rem' }}>�</span> ลากนิ้วเพื่อเลือกพื้นที่ที่ต้องการตรวจจับสินค้า
+                    </div>
                     <div
                       className={styles.imageContainer}
                       onMouseDown={onMouseDown}
                       onMouseMove={onMouseMove}
                       onMouseUp={onMouseUp}
+                      onTouchStart={onTouchStart}
+                      onTouchMove={onTouchMove}
+                      onTouchEnd={onTouchEnd}
                     >
                       <img 
                         ref={imgRef} 

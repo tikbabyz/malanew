@@ -138,8 +138,9 @@
 /* Announcements Grid */
 .announcementsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2.5rem;
+  padding: 1rem 0;
 }
 
 /* Announcement Card */
@@ -185,25 +186,31 @@
 /* Image Container */
 .imageContainer {
   position: relative;
-  height: 200px;
+  height: 280px;
   overflow: hidden;
+  background: #f8fafc;
 }
 
 .announcementImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  object-position: center;
+  transition: all 0.3s ease;
+  filter: brightness(1.05) contrast(1.1) saturate(1.1);
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .announcementCard:hover .announcementImage {
-  transform: scale(1.1);
+  transform: scale(1.05);
+  filter: brightness(1.1) contrast(1.15) saturate(1.15);
 }
 
 .placeholderImage {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #fecaca, #fef2f2);
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -213,7 +220,7 @@
 
 .placeholderIcon {
   font-size: 3rem;
-  color: #dc2626;
+  color: #9ca3af;
 }
 
 .placeholderText {
@@ -228,8 +235,14 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 50%;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.3), transparent);
+  height: 30%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.announcementCard:hover .imageOverlay {
+  opacity: 1;
 }
 
 /* Card Content */
@@ -461,6 +474,11 @@
   .announcementsGrid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+    padding: 0.5rem;
+  }
+
+  .imageContainer {
+    height: 250px;
   }
 
   .cardContent {
@@ -490,6 +508,10 @@
 
   .titleIcon {
     font-size: 1.75rem;
+  }
+
+  .imageContainer {
+    height: 220px;
   }
 
   .statCard {

@@ -1967,6 +1967,7 @@
   }
   
   .productImage {
+    width: 160px;
     height: 160px;
   }
   
@@ -2068,47 +2069,114 @@
   }
   
   .productsGrid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
   }
   
   .productCard {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
     border-radius: 12px;
+    padding: 1rem;
+    gap: 1rem;
   }
   
   .productImage {
-    height: 180px;
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .productImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .noImage {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+    border: 2px dashed #d1d5db;
+  }
+  
+  .noImage span {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-align: center;
   }
   
   .productInfo {
-    padding: 1rem;
+    flex: 1;
+    padding: 0;
+    gap: 0.5rem;
+    min-width: 0; /* ป้องกัน text overflow */
   }
   
   .productName {
-    font-size: 1.125rem;
-    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+  }
+  
+  .productMeta {
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .productCategory,
+  .productColor {
+    font-size: 0.75rem;
+    padding: 3px 6px;
   }
   
   .productPrice {
-    font-size: 1.375rem;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    color: #dc2626;
+  }
+  
+  .productStock {
+    margin-top: 0.25rem;
+  }
+  
+  .stockLabel {
+    font-size: 0.75rem;
+  }
+  
+  .stockValue {
+    font-size: 0.8rem;
+    padding: 2px 6px;
   }
   
   .productActions {
+    flex-shrink: 0;
+    flex-direction: column;
+    gap: 0.5rem;
     position: static;
     opacity: 1;
-    justify-content: space-around;
-    margin-top: 0.75rem;
-    padding: 0.75rem;
-    background: rgba(248, 250, 252, 0.8);
-    border-radius: 8px;
-    border-top: 1px solid rgba(226, 232, 240, 0.5);
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+    margin-top: 0;
   }
   
   .editButton, .deleteButton, .stockButton, .priorityButton {
-    padding: 0.75rem;
-    border-radius: 10px;
-    min-width: 44px;
-    min-height: 44px;
+    padding: 0.5rem;
+    border-radius: 8px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 0.8rem;
   }
   
   .modal, .colorPricingModal {
@@ -2773,7 +2841,7 @@
   
   .searchInput:focus, .filterSelect:focus {
     border-color: #dc2626;
-    background: #000;
+    background: #111827; /* เปลี่ยนกลับเป็นสีเทาเข้ม */
   }
   
   .modal, .colorPricingModal {
@@ -2786,7 +2854,7 @@
   }
   
   .formInput, .formSelect, .formTextarea {
-    background: #000;
+    background: #111827; /* เปลี่ยนกลับเป็นสีเทาเข้ม */
     border-color: #374151;
     color: #f9fafb;
   }
@@ -2807,7 +2875,7 @@
   }
   
   .uploadArea:hover {
-    background: #000;
+    background: #1f2937; /* เปลี่ยนกลับเป็นสีเทาเข้ม */
     border-color: #dc2626;
   }
 }

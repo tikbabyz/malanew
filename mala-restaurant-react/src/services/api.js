@@ -1,11 +1,47 @@
 // src/services/api.js
-export const API_BASE =
-  import.meta.env.VITE_API_BASE ||
-  (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-    ? 'http://127.0.0.1:8000'
-    : `http://${location.hostname}:8000`);
+// ✅ ใช้ dynamic host เพื่อรองรับทั้ง localhost และ mobile hotspot
+const host = window.location.hostname; // จะเป็น localhost หรือ 172.20.10.3
+// export const API_BASE = import.meta.env.VITE_API_BASE || `http://${host}:8000`;
+export const API_BASE = `http://${host}:8000`;
 
-const API_PREFIX = `${API_BASE}/api`;
+export const API_PREFIX = `${API_BASE}/api`;
+
+// ✅ Helper function สำหรับสร้าง URL รูปภาพ
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  
+  console.log('🖼️ Processing image path:', imagePath);
+  
+  // ถ้า imagePath เป็น full URL อยู่แล้ว
+  if (imagePath.startsWith('http')) {
+    console.log('✅ Already full URL:', imagePath);
+    return imagePath;
+  }
+  
+  // ถ้าเริ่มด้วย /uploads
+  if (imagePath.startsWith('/uploads')) {
+    const fullUrl = `${API_BASE}${imagePath}`;
+    console.log('✅ Uploads path:', fullUrl);
+    return fullUrl;
+  }
+  
+  // ถ้าเริ่มด้วย /api
+  if (imagePath.startsWith('/api')) {
+    const fullUrl = `${API_BASE}${imagePath}`;
+    console.log('✅ API path:', fullUrl);
+    return fullUrl;
+  }
+  
+  // ถ้าเป็น filename อย่างเดียว - ลองหลาย pattern
+  const patterns = [
+    `/api/products/images/${imagePath}`,
+    `/uploads/products/${imagePath}`
+  ];
+  
+  const finalUrl = `${API_BASE}${patterns[0]}`;
+  console.log('✅ Generated URL:', finalUrl);
+  return finalUrl;
+};
 
 console.log('🔧 API Configuration:');
 console.log('  API_BASE:', API_BASE);
@@ -194,5 +230,5 @@ export const API = {
     delete: (id) => http(`/users/${id}`, { method: 'DELETE' }),
   },
 };
-export { API_PREFIX };
+
 export default API;

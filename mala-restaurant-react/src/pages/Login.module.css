@@ -408,3 +408,44 @@
     padding: 0.75rem 1.25rem;
   }
 }
+/* ให้เว้นระยะใต้ช่องเมื่อมี error */
+.errorMessage,
+.submitError {
+  margin-top: 0.5rem;          /* เพิ่มระยะห่างจาก input */
+}
+
+/* ป้องกันข้อความ error หลุดบรรทัดหรือถูกบีบให้จางหาย */
+.errorMessage {
+  white-space: normal;         /* ให้ตัดบรรทัดได้ */
+  line-height: 1.4;
+}
+
+/* เผื่อบางธีมมี reset ซ่อน element ที่ว่าง ให้บังคับแสดง */
+.errorMessage,
+.submitError {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* เวลา input มี error ให้ layer ของเส้นขีดอยู่ใต้ปุ่ม toggle */
+.inputContainer {
+  position: relative;
+}
+.inputContainer .passwordToggle {
+  position: absolute;
+  z-index: 2;                  /* อยู่เหนือขอบ input */
+}
+.inputContainer .input {
+  position: relative;
+  z-index: 1;
+}
+
+/* เล็กน้อย: ให้ error โผล่แบบนุ่ม ๆ */
+@keyframes errorFade {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.errorMessage, .submitError {
+  animation: errorFade .15s ease-out;
+}

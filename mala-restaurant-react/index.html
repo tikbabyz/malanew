@@ -2,15 +2,77 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-    <meta name="theme-color" content="#0b1222"/>
-    <title>Mala Restaurant</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Responsive & iOS Safe Area Support -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"/>
+    <meta name="format-detection" content="telephone=no"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="theme-color" content="#dc2626"/>
+    <meta name="msapplication-TileColor" content="#dc2626"/>
+    
+    <!-- PWA Support -->
+    <meta name="apple-mobile-web-app-title" content="Mala Restaurant"/>
+    <meta name="application-name" content="Mala Restaurant"/>
+    
+    <title>Mala Restaurant - ระบบจัดการร้านหม่าล่า</title>
+
+    <!-- Google Fonts: แนะนำให้โหลดจาก <head> (แทน @import ใน CSS) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Base CSS for iOS Safe Area -->
+    <style>
+      /* Base Safe Area CSS */
+      :root {
+        --safe-area-inset-top: env(safe-area-inset-top, 0);
+        --safe-area-inset-right: env(safe-area-inset-right, 0);
+        --safe-area-inset-bottom: env(safe-area-inset-bottom, 0);
+        --safe-area-inset-left: env(safe-area-inset-left, 0);
+      }
+      
+      * {
+        box-sizing: border-box;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', 'Noto Sans Thai', system-ui, -apple-system, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        color: #1f2937;
+        background: #f8fafc;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior: none;
+      }
+      
+      #root {
+        min-height: 100vh;
+        min-height: calc(100vh - env(safe-area-inset-top, 0));
+      }
+      
+      /* Touch optimization */
+      button, 
+      input, 
+      select, 
+      textarea {
+        font-size: 16px; /* Prevent zoom on iOS */
+      }
+      
+      /* Prevent overscroll */
+      html, body {
+        overscroll-behavior-y: none;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
-
-

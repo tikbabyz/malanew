@@ -1,141 +1,112 @@
 // src/pages/Login.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { 
-  FaUser, 
-  FaLock, 
-  FaSignInAlt, 
-  FaSpinner, 
-  FaExclamationTriangle, 
-  FaEye, 
-  FaEyeSlash,
-  FaUtensils,
-  FaShieldAlt
-} from 'react-icons/fa';
+import {
+  FaUser, FaLock, FaSignInAlt, FaSpinner, FaExclamationTriangle,
+  FaEye, FaEyeSlash, FaUtensils, FaShieldAlt
+} from "react-icons/fa";
 import styles from "./Login.module.css";
 import { useAuthStore } from "../store/auth.js";
+// import ConfirmModal from "../components/ConfirmModal.jsx";
 
 export default function Login() {
   const nav = useNavigate();
   const loc = useLocation();
   const { login: loginStore, user } = useAuthStore();
+  // const [showError, setshowError] = React.useState(false);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
 
-  // ถ้า user login อยู่แล้ว ให้ redirect ไปยังหน้าที่เหมาะสมตาม role
-  useEffect(() => {
-    if (user) {
-      let redirectTo;
-      if (user.role === "ADMIN") {
-        redirectTo = "/admin";
-      } else if (user.role === "STAFF") {
-        redirectTo = "/staff/pos";
-      } else {
-        redirectTo = "/";
-      }
-      
-      const to = loc.state?.from || redirectTo;
-      nav(to, { replace: true });
-    }
-  }, [user, nav, loc.state]);
+  // errors.username / errors.password = ข้อความใต้ช่อง
+  const [errors, setErrors] = useState({}); // { username?: string, password?: string }
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const validateForm = () => {
-    const newErrors = {};
-    
-    if (!username.trim()) {
-      newErrors.username = "กรุณากรอกชื่อผู้ใช้";
-    } else if (username.trim().length < 3) {
-      newErrors.username = "ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร";
-    }
-    
-    if (!password) {
-      newErrors.password = "กรุณากรอกรหัสผ่าน";
-    } else if (password.length < 4) {
-      newErrors.password = "รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร";
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const e = {};
+    if (!username.trim()) e.username = "กรุณากรอกชื่อผู้ใช้";
+    if (!password) e.password = "กรุณากรอกรหัสผ่าน";
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const handleLogin = async (e) => {
     e?.preventDefault();
+    setError("");
     if (!validateForm() || loading) return;
-    
-    console.log('🔐 Starting login process...');
-    console.log('Username:', username.trim());
-    console.log('Password length:', password.trim().length);
-    
+
     setLoading(true);
-    setErrors({});
-    
+    // ไม่ล้าง errors ที่นี่ ปล่อย validate จัดการไปแล้ว
+
     try {
-      console.log('📡 Calling loginStore...');
-      
-      const userProfile = await loginStore({ 
-        username: username.trim(), 
-        password: password.trim() 
+      const userProfile = await loginStore({
+        username: username.trim(),
+        password: password.trim(),
       });
+      const to =
+        userProfile.role === "ADMIN" ? "/admin" :
+        userProfile.role === "STAFF" ? "/staff/workflow" : "/";
+      nav(to, { replace: true });
+    }  catch (err) {
+  console.warn("⚠️ Login failed:", err);
+  const raw = String(err?.message || "").toLowerCase();
 
-      console.log('✅ Login successful, user profile:', userProfile);
+  // เคลียร์ global error เพื่อให้โชว์รายช่อง
+  setError("");
 
-      // ล้าง route state เก่าออก
-      console.log('🧹 Clearing location state...');
+  if (raw.includes("รหัสผ่าน") || raw.includes("password")) {
+    setErrors(prev => ({ ...prev, password: "รหัสผ่านไม่ถูกต้อง" }));
+    console.log('[DEBUG] setErrors(password): รหัสผ่านไม่ถูกต้อง');
+  } else if (
+    raw.includes("ไม่พบ") || raw.includes("ผู้ใช้") || raw.includes("บัญชี") ||
+    raw.includes("user not found")
+  ) {
+    setErrors(prev => ({ ...prev, username: "ไม่พบบัญชีผู้ใช้" }));
+    console.log('[DEBUG] setErrors(username): ไม่พบบัญชีผู้ใช้');
+  } else {
+    setError(err?.message || "เข้าสู่ระบบไม่สำเร็จ");
+    console.log('[DEBUG] setError(global):', err?.message || "เข้าสู่ระบบไม่สำเร็จ");
+  }
+} finally {
+  setLoading(false);
+}
 
-      const roleRedirects = {
-        "ADMIN": "/admin",
-        "STAFF": "/staff/workflow",
-        "admin": "/admin",
-        "staff": "/staff/workflow"
-      };
-      
-      const redirectTo = roleRedirects[userProfile.role] || "/";
-      
-      console.log('🎯 User role:', userProfile.role);
-      console.log('🔄 Redirecting to:', redirectTo);
-      
-      // ใช้ replace: true เพื่อไม่ให้กลับมาหน้า login ได้
-      nav(redirectTo, { replace: true });
-      
-    } catch (error) {
-      console.error("❌ Login error:", error);
-      
-      const errorMessage = error.message || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ";
-      setErrors({ submit: errorMessage });
-    } finally {
-      console.log('🔚 Login process finished');
-      setLoading(false);
+  };
+
+  const onKeyDown = (e) => e.key === "Enter" && handleLogin(e);
+  const togglePasswordVisibility = () => setShowPassword((v) => !v);
+
+  // เคลียร์ error รายช่องเมื่อพิมพ์ใหม่
+  const onChangeUsername = (e) => {
+    setUsername(e.target.value);
+    if (errors.username) setErrors((p) => ({ ...p, username: undefined }));
+  };
+  const onChangePassword = (e) => {
+    setPassword(e.target.value);
+    if (errors.password) setErrors((p) => ({ ...p, password: undefined }));
+  };
+
+  useEffect(() => {
+    if (user) {
+      const redirectTo =
+        user.role === "ADMIN" ? "/admin" :
+        user.role === "STAFF" ? "/staff/workflow" : "/";
+      nav(loc.state?.from || redirectTo, { replace: true });
     }
-  };
-
-  const onKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleLogin(e);
-    }
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  }, [user, nav, loc.state]);
 
   return (
     <div className="pageBg">
       <div className={styles.container}>
-        
-        {/* Background Elements */}
         <div className={styles.backgroundElements}>
-          <div className={styles.backgroundShape1}></div>
-          <div className={styles.backgroundShape2}></div>
-          <div className={styles.backgroundShape3}></div>
+          <div className={styles.backgroundShape1} />
+          <div className={styles.backgroundShape2} />
+          <div className={styles.backgroundShape3} />
         </div>
 
-        {/* Login Card */}
         <div className={styles.loginCard}>
-          {/* Header */}
           <div className={styles.header}>
             <div className={styles.logoContainer}>
               <FaUtensils className={styles.logoIcon} />
@@ -150,9 +121,8 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Login Form */}
-          <form className={styles.form} onSubmit={handleLogin}>
-            {/* Username Field */}
+          <form className={styles.form} onSubmit={handleLogin} noValidate>
+            {/* Username */}
             <div className={styles.formGroup}>
               <label className={styles.label}>
                 <FaUser className={styles.labelIcon} />
@@ -162,24 +132,25 @@ export default function Login() {
                 <input
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className={`${styles.input} ${errors.username ? styles.inputError : ''}`}
+                  onChange={onChangeUsername}
+                  className={`${styles.input} ${errors.username ? styles.inputError : ""}`}
                   placeholder="กรอกชื่อผู้ใช้"
-                  onKeyDown={onKeyDown}
                   disabled={loading}
                   autoComplete="username"
+                  aria-invalid={!!errors.username}
+                  aria-describedby={errors.username ? "user-error" : undefined}
                 />
                 <FaUser className={styles.inputIcon} />
               </div>
               {errors.username && (
-                <div className={styles.errorMessage}>
+                <div id="user-error" className={styles.errorMessage} aria-live="polite">
                   <FaExclamationTriangle className={styles.errorIcon} />
                   {errors.username}
                 </div>
               )}
             </div>
 
-            {/* Password Field */}
+            {/* Password */}
             <div className={styles.formGroup}>
               <label className={styles.label}>
                 <FaLock className={styles.labelIcon} />
@@ -189,12 +160,13 @@ export default function Login() {
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
+                  onChange={onChangePassword}
+                  className={`${styles.input} ${errors.password ? styles.inputError : ""}`}
                   placeholder="กรอกรหัสผ่าน"
-                  onKeyDown={onKeyDown}
                   disabled={loading}
                   autoComplete="current-password"
+                  aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? "pass-error" : undefined}
                 />
                 <FaLock className={styles.inputIcon} />
                 <button
@@ -208,27 +180,23 @@ export default function Login() {
                 </button>
               </div>
               {errors.password && (
-                <div className={styles.errorMessage}>
+                <div id="pass-error" className={styles.errorMessage} aria-live="polite">
                   <FaExclamationTriangle className={styles.errorIcon} />
                   {errors.password}
                 </div>
               )}
             </div>
 
-            {/* Submit Error */}
-            {errors.submit && (
-              <div className={styles.submitError}>
+            {/* Global error (อื่น ๆ) */}
+            {error && (
+              <div className={styles.submitError} aria-live="polite">
                 <FaExclamationTriangle className={styles.errorIcon} />
-                {errors.submit}
+                {error}
               </div>
             )}
 
-            {/* Submit Button */}
-            <button 
-              type="submit"
-              className={styles.submitButton} 
-              disabled={loading}
-            >
+            {/* Submit */}
+            <button type="submit" className={styles.submitButton} disabled={loading}>
               {loading ? (
                 <>
                   <FaSpinner className={styles.spinnerIcon} />
@@ -243,12 +211,20 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Footer */}
           <div className={styles.footer}>
-            <p className={styles.footerText}>
-              © 2024 ร้านหมาล่า - ระบบจัดการร้านอาหาร
-            </p>
+            <p className={styles.footerText}>© 2025 ร้านหมาล่า - ระบบจัดการร้านอาหาร</p>
           </div>
+          {/* <ConfirmModal
+            open={showError}
+            title={errors.password}
+            message="asdasd?"
+            confirmText="asd"
+            cancelText="ยกเลิก"
+            danger
+            icon="warning"
+            onCancel={() => setshowError(false)}
+            onConfirm={() => setshowError(false)}
+          /> */}
         </div>
       </div>
     </div>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useDataStore } from "../../store/data.js";
-import AdminNavigation from "../../components/AdminNavigation.jsx";
 import styles from "./PermissionsNew.module.css";
 import { 
   FaUserShield, 
@@ -206,9 +205,6 @@ export default function Permissions() {
 
   return (
     <div className={styles.container}>
-      <AdminNavigation variant="horizontal" />
-      <AdminNavigation variant="breadcrumb" />
-      
       {/* Header Section */}
       <div className={styles.permissionsHeader}>
         <div className={styles.headerContent}>

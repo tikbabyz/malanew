@@ -1,0 +1,356 @@
+/* ===========================
+   CLEAN RESPONSIVE TABLE STYLES
+=========================== */
+
+/* CSS Variables */
+:root {
+  --table-border-color: #e2e8f0;
+  --table-border-subtle: rgba(226, 232, 240, 0.6);
+  --table-hover-color: #f8fafc;
+  --table-selected-color: #fef2f2;
+  --table-header-bg: #f1f5f9;
+  --table-radius: 0.75rem;
+  --table-cell-padding: 0.75rem 1rem;
+  --table-cell-padding-mobile: 0.5rem 0.75rem;
+  --table-min-touch-target: 44px;
+}
+
+/* Clean Table Container - Single Border Only */
+.tableContainer {
+  position: relative;
+  background: white;
+  border-radius: var(--table-radius);
+  /* Remove box-shadow for cleaner look */
+  overflow: hidden;
+  border: 1px solid var(--table-border-subtle);
+}
+
+/* Table Wrapper with Scroll */
+.tableWrapper {
+  position: relative;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.horizontalScroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+.horizontalScroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.horizontalScroll::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+.horizontalScroll::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.horizontalScroll::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* Clean Scroll Indicators */
+.scrollIndicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  z-index: 10;
+  pointer-events: none;
+  /* Remove animation for cleaner look */
+}
+
+.scrollLeft {
+  left: 8px;
+}
+
+.scrollRight {
+  right: 8px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* Base Table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  min-width: 600px; /* Minimum width for horizontal scroll */
+}
+
+/* Table Head */
+.tableHead {
+  background: var(--table-header-bg);
+}
+
+.stickyHeader .tableHead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--table-header-bg);
+  backdrop-filter: blur(8px);
+}
+
+/* Table Header Cells */
+.tableHeaderCell {
+  padding: var(--table-cell-padding);
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid var(--table-border-color);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.sortable {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.sortable:hover {
+  background: #e2e8f0;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sortIcon {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  transition: color 0.2s;
+}
+
+.sortable:hover .sortIcon {
+  color: #374151;
+}
+
+/* Table Body */
+.tableBody {
+  background: white;
+}
+
+/* Table Rows */
+.tableRow {
+  border-bottom: 1px solid var(--table-border-color);
+  transition: background-color 0.2s;
+}
+
+.tableRow:hover {
+  background: var(--table-hover-color);
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  background: var(--table-selected-color);
+}
+
+/* Table Cells */
+.tableCell {
+  padding: var(--table-cell-padding);
+  border-bottom: 1px solid var(--table-border-color);
+  color: #6b7280;
+  vertical-align: middle;
+}
+
+.tableRow:last-child .tableCell {
+  border-bottom: none;
+}
+
+.truncate {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===========================
+   MOBILE RESPONSIVE STYLES
+=========================== */
+
+/* Mobile Layout (≤768px) */
+@media (max-width: 768px) {
+  .table {
+    min-width: 100%;
+  }
+  
+  .tableContainer {
+    border-radius: var(--table-radius);
+    margin: 0;
+  }
+  
+  /* Stack table on mobile */
+  .table,
+  .tableHead,
+  .tableBody,
+  .tableRow,
+  .tableHeaderCell,
+  .tableCell {
+    display: block;
+  }
+  
+  .tableHead {
+    display: none; /* Hide header on mobile */
+  }
+  
+  .tableRow {
+    border: 1px solid var(--table-border-color);
+    border-radius: var(--table-radius);
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .tableCell {
+    border: none;
+    padding: var(--table-cell-padding-mobile);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: var(--table-min-touch-target);
+  }
+  
+  .tableCell:before {
+    content: attr(data-mobile-label);
+    font-weight: 600;
+    color: #374151;
+    flex-shrink: 0;
+    margin-right: 1rem;
+    min-width: 100px;
+  }
+  
+  .tableCell:empty:before {
+    display: none;
+  }
+  
+  /* Hide scroll indicators on mobile */
+  .scrollIndicator {
+    display: none;
+  }
+}
+
+/* Tablet adjustments (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .table {
+    min-width: 700px;
+  }
+  
+  .tableHeaderCell,
+  .tableCell {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Small touch targets adjustment */
+@media (max-width: 480px) {
+  .tableCell {
+    min-height: calc(var(--table-min-touch-target) + 8px);
+    padding: 0.75rem;
+  }
+  
+  .tableRow {
+    padding: 0.75rem;
+  }
+}
+
+/* ===========================
+   DARK MODE SUPPORT
+=========================== */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --table-border-color: #374151;
+    --table-hover-color: #1f2937;
+    --table-selected-color: #7f1d1d;
+    --table-header-bg: #1f2937;
+    --table-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  .table {
+    background: #111827;
+    color: #e5e7eb;
+  }
+  
+  .tableHead {
+    background: var(--table-header-bg);
+  }
+  
+  .tableHeaderCell {
+    color: #f3f4f6;
+  }
+  
+  .tableCell {
+    color: #d1d5db;
+  }
+  
+  .tableContainer {
+    background: #111827;
+  }
+}
+
+/* ===========================
+   ACCESSIBILITY IMPROVEMENTS
+=========================== */
+
+/* Focus styles */
+.sortable:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .table {
+    border: 2px solid;
+  }
+  
+  .tableHeaderCell,
+  .tableCell {
+    border: 1px solid;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .tableRow,
+  .sortable,
+  .scrollIndicator {
+    transition: none;
+  }
+  
+  .scrollIndicator {
+    animation: none;
+  }
+}

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 // import { useDataStore } from "../../store/data.js";
-import AdminNavigation from "../../components/AdminNavigation.jsx";
 import styles from './Payments.module.css';
 import API, { API_BASE } from '../../services/api';
 import { 
@@ -128,8 +127,6 @@ export default function Payments() {
     <>
       <div className="pageBg">
         <div className={styles.container}>
-          <AdminNavigation variant="horizontal" />
-          
           {/* Header Section */}
           <div className={styles.paymentsHeader}>
             <div className={styles.headerContent}>

@@ -191,6 +191,11 @@ export default function News() {
                           className={styles.announcementImage}
                           loading="lazy"
                           onError={() => handleImageError(announcement.id)}
+                          onLoad={(e) => {
+                            // เพิ่มการจัดการเมื่อรูปโหลดเสร็จ
+                            e.target.style.opacity = '1';
+                          }}
+                          style={{ opacity: 0, transition: 'opacity 0.3s ease' }}
                         />
                       ) : (
                         <div className={styles.placeholderImage}>

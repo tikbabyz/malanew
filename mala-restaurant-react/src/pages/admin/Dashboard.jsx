@@ -4,40 +4,13 @@ import {
   FaShoppingCart, 
   FaMoneyBillWave, 
   FaUsers,
-  FaTrendingUp,
-  FaTrendingDown,
-  FaCalendarAlt,
-  FaSearch,
-  FaRefresh,
-  FaDownload,
+  FaArrowUp,
+  FaArrowDown,
   FaEye,
-  FaClock,
-  FaThermometerHalf,
-  FaCloudSun,
-  FaWind,
-  FaTint,
-  FaBell,
-  FaFire,
-  FaMoon,
-  FaSun
+  FaBell
 } from 'react-icons/fa';
 import API from "../../services/api";
 import styles from "./Dashboard.module.css";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell
-} from "recharts";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
@@ -51,104 +24,114 @@ dayjs.extend(isSameOrBefore);
 dayjs.extend(relativeTime);
 dayjs.locale('th');
 
-/* ===== helpers ===== */
+function toArray(maybe) {
+  if (Array.isArray(maybe)) return maybe;
+  if (maybe?.data && Array.isArray(maybe.data)) return maybe.data;
+  if (maybe?.items && Array.isArray(maybe.items)) return maybe.items;
+  return [];
+}
+
+function coerceDate(v) {
+  if (!v) return null;
+  const d = typeof v === 'number' ? dayjs(v) : dayjs(v);
+  return d.isValid() ? d : null;
+}
+
+function normalizeOrder(raw) {
+  const createdRaw = raw.createdAt ?? raw.created_at ?? raw.created ?? raw.date;
+  const created = coerceDate(createdRaw);
+  const totalNum = Number(
+    raw.total ?? raw.amount ?? raw.grandTotal ?? raw.price ?? 0
+  );
+  return {
+    ...raw,
+    createdAt: created ? created.toISOString() : null,
+    total: Number.isFinite(totalNum) ? totalNum : 0,
+  };
+}
+
+/* helpers */
 function daysBetweenISO(startISO, endISO) {
   const out = [];
   let d = dayjs(startISO, "YYYY-MM-DD").startOf("day");
   const e = dayjs(endISO, "YYYY-MM-DD").endOf("day");
   while (d.isSameOrBefore(e, "day")) {
-    out.push(d.format("YYYY-MM-DD")); // เก็บ ISO
+    out.push(d.format("YYYY-MM-DD"));
     d = d.add(1, "day");
   }
   return out;
 }
 
 export default function AdminDashboard() {
-  // Dark mode state
-  const [isDarkMode, setIsDarkMode] = React.useState(false);
-  
-  // Real-time clock state
-  const [currentTime, setCurrentTime] = React.useState(dayjs());
-  
-  // Weather state (mock data for demo)
-  const [weather, setWeather] = React.useState({
-    temp: 32,
-    condition: 'sunny',
-    humidity: 65,
-    windSpeed: 8,
-    location: 'กรุงเทพฯ'
-  });
-  
-  // Update time every second
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(dayjs());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Simulate weather updates every 30 seconds
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setWeather(prev => ({
-        ...prev,
-        temp: Math.floor(Math.random() * 10) + 28, // 28-37°C
-        humidity: Math.floor(Math.random() * 30) + 50, // 50-80%
-        windSpeed: Math.floor(Math.random() * 15) + 5 // 5-20 km/h
-      }));
-    }, 30000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // ดึง orders จาก API
+  // state
   const [orders, setOrders] = React.useState([]);
+  const [products, setProducts] = React.useState([]);
+  const [users, setUsers] = React.useState([]);
+  const [payments, setPayments] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
 
-  const [startDate, setStartDate] = React.useState(
-    dayjs().subtract(7, "day").format("YYYY-MM-DD")
-  );
-  const [endDate, setEndDate] = React.useState(dayjs().format("YYYY-MM-DD"));
+  // fixed ช่วงวันที่ (คงไว้ 7 วันล่าสุด สำหรับคำนวณสถิติ)
+  const startDate = dayjs().subtract(7, "day").format("YYYY-MM-DD");
+  const endDate = dayjs().format("YYYY-MM-DD");
 
-  // โหลด orders เมื่อช่วงวันที่เปลี่ยน
-  React.useEffect(() => {
-    setLoading(true);
-    API.orders.list({ startDate, endDate })
-      .then(setOrders)
-      .finally(() => setLoading(false));
+  const [safeStart, safeEnd] = React.useMemo(() => {
+    const s = dayjs(startDate, "YYYY-MM-DD");
+    const e = dayjs(endDate, "YYYY-MM-DD");
+    return s.isAfter(e)
+      ? [e.format("YYYY-MM-DD"), s.format("YYYY-MM-DD")]
+      : [s.format("YYYY-MM-DD"), e.format("YYYY-MM-DD")];
   }, [startDate, endDate]);
 
-  // คัดกรองออเดอร์ตามช่วงวันที่ (ถ้า API ไม่รองรับ filter ให้ใช้ตรงนี้)
+  // load data
+  const loadData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [ordersRes, productsRes, usersRes, paymentsRes] = await Promise.allSettled([
+        API.orders.list({ startDate: safeStart, endDate: safeEnd }),
+        API.products.list(),
+        API.users.list(),
+        API.payments ? API.payments.list({ startDate: safeStart, endDate: safeEnd }) : Promise.resolve([])
+      ]);
+
+      if (ordersRes.status === 'fulfilled') {
+        const arr = toArray(ordersRes.value);
+        setOrders(arr.map(normalizeOrder));
+      } else {
+        console.warn('Failed to load orders:', ordersRes.reason);
+        setOrders([]);
+      }
+
+      setProducts(productsRes.status === 'fulfilled' ? toArray(productsRes.value) : []);
+      setUsers(usersRes.status === 'fulfilled' ? toArray(usersRes.value) : []);
+      setPayments(paymentsRes.status === 'fulfilled' ? toArray(paymentsRes.value) : []);
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [safeStart, safeEnd]);
+
+  React.useEffect(() => { loadData(); }, [loadData]);
+
+  // filter orders
   const filteredOrders = React.useMemo(() => {
-    const start = dayjs(startDate, "YYYY-MM-DD").startOf("day");
-    const end = dayjs(endDate, "YYYY-MM-DD").endOf("day");
+    const start = dayjs(safeStart, "YYYY-MM-DD").startOf("day");
+    const end = dayjs(safeEnd, "YYYY-MM-DD").endOf("day");
     return (orders || []).filter((o) => {
+      if (!o.createdAt) return false;
       const dt = dayjs(o.createdAt);
-      return dt.isSameOrAfter(start) && dt.isSameOrBefore(end);
+      return dt.isValid() && dt.isSameOrAfter(start) && dt.isSameOrBefore(end);
     });
-  }, [orders, startDate, endDate]);
+  }, [orders, safeStart, safeEnd]);
 
-  // รายชื่อเดือนภาษาไทย (ตัวย่อ)
-  const TH_MONTHS = [
-    "ม.ค.",
-    "ก.พ.",
-    "มี.ค.",
-    "เม.ย.",
-    "พ.ค.",
-    "มิ.ย.",
-    "ก.ค.",
-    "ส.ค.",
-    "ก.ย.",
-    "ต.ค.",
-    "พ.ย.",
-    "ธ.ค.",
-  ];
-
-  // ====== ทำ dailyStats ด้วย key = ISO แล้วค่อยฟอร์แมตตอนแสดง ======
+  // daily stats (ใช้แค่คำนวณสรุป ไม่ได้แสดงกราฟ)
   const dailyStats = React.useMemo(() => {
-    const days = daysBetweenISO(startDate, endDate);
-    const base = Object.fromEntries(
-      days.map((iso) => [iso, { dateISO: iso, orders: 0, revenue: 0 }])
-    );
+    const days = daysBetweenISO(safeStart, safeEnd);
+    const base = Object.fromEntries(days.map((iso) => [iso, { dateISO: iso, orders: 0, revenue: 0 }]));
     for (const o of filteredOrders) {
       const iso = dayjs(o.createdAt).format("YYYY-MM-DD");
       if (!base[iso]) continue;
@@ -156,32 +139,20 @@ export default function AdminDashboard() {
       base[iso].revenue += Number(o.total || 0);
     }
     return Object.values(base);
-  }, [filteredOrders, startDate, endDate]);
+  }, [filteredOrders, safeStart, safeEnd]);
 
-  // สรุปยอดรวม
+  // summary
   const totalOrders = filteredOrders.length;
-  const totalRevenue = filteredOrders.reduce(
-    (sum, o) => sum + Number(o.total || 0),
-    0
-  );
+  const totalRevenue = filteredOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
 
-  // เปอร์เซ็นต์เปลี่ยนแปลง: วันล่าสุด vs ก่อนหน้า
   const lastDay = dailyStats[dailyStats.length - 1];
   const prevDay = dailyStats[dailyStats.length - 2];
-  const orderChange =
-    lastDay && prevDay
-      ? (
-          ((lastDay.orders - prevDay.orders) / (prevDay.orders || 1)) *
-          100
-        ).toFixed(1) + "%"
-      : "0%";
-  const revenueChange =
-    lastDay && prevDay
-      ? (
-          ((lastDay.revenue - prevDay.revenue) / (prevDay.revenue || 1)) *
-          100
-        ).toFixed(1) + "%"
-      : "0%";
+  const orderChange = lastDay && prevDay
+    ? (((lastDay.orders - prevDay.orders) / (prevDay.orders || 1)) * 100).toFixed(1) + "%"
+    : "0%";
+  const revenueChange = lastDay && prevDay
+    ? (((lastDay.revenue - prevDay.revenue) / (prevDay.revenue || 1)) * 100).toFixed(1) + "%"
+    : "0%";
 
   const stats = [
     {
@@ -192,237 +163,93 @@ export default function AdminDashboard() {
     },
     {
       title: "รายรับ",
-      value: `฿${totalRevenue.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}`,
+      value: `฿${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: revenueChange,
       isUp: lastDay && prevDay ? lastDay.revenue >= prevDay.revenue : null,
     },
   ];
 
-  /* ===== Responsive tick: ถ้ากว้าง ≤ 480px ให้สั้นเป็น “D ม.ค.” ไม่งั้น “DD/MM” ===== */
-  const chartWrapRef = React.useRef(null);
-  const [chartW, setChartW] = React.useState(0);
-  React.useEffect(() => {
-    const el = chartWrapRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setChartW(el.clientWidth));
-    ro.observe(el);
-    setChartW(el.clientWidth);
-    return () => ro.disconnect();
-  }, []);
-  const compact = chartW <= 480;
-  const fmtTick = React.useCallback(
-    (iso) => {
-      const d = dayjs(iso);
-      return compact
-        ? `${d.date()} ${TH_MONTHS[d.month()]}`
-        : d.format("DD/MM");
-    },
-    [compact]
-  );
-  const fmtTooltipLabel = (iso) => dayjs(iso).format("DD/MM/YYYY");
-
-  // Quick actions data
+  // quick actions
   const quickActions = [
-    { 
-      icon: FaUsers, 
-      label: 'จัดการผู้ใช้', 
-      path: '/admin/users',
-      color: '#3b82f6'
-    },
-    { 
-      icon: FaShoppingCart, 
-      label: 'จัดการสินค้า', 
-      path: '/admin/products',
-      color: '#10b981'
-    },
-    { 
-      icon: FaMoneyBillWave, 
-      label: 'การชำระเงิน', 
-      path: '/admin/payments',
-      color: '#f59e0b'
-    },
-    { 
-      icon: FaEye, 
-      label: 'ดูคำสั่งซื้อ', 
-      path: '/staff/orders',
-      color: '#ef4444'
-    }
+    { icon: FaUsers, label: 'จัดการผู้ใช้', path: '/admin/users', color: '#3b82f6', count: users.length },
+    { icon: FaShoppingCart, label: 'จัดการสินค้า', path: '/admin/products', color: '#10b981', count: products.length },
+    { icon: FaMoneyBillWave, label: 'การชำระเงิน', path: '/admin/payments', color: '#f59e0b', count: payments.length },
+    { icon: FaEye, label: 'ออเดอร์ทั้งหมด', path: '/admin/orders', color: '#ef4444', count: totalOrders },
   ];
 
-  // Mock top products data
-  const topProducts = React.useMemo(() => {
-    const products = [
-      { name: 'หม่าล่าต้นตำรับ', sales: 145, revenue: 72500, color: '#ef4444' },
-      { name: 'หม่าล่าพิเศษ', sales: 98, revenue: 58800, color: '#f59e0b' },
-      { name: 'เนื้อหม่าล่า', sales: 87, revenue: 52200, color: '#10b981' },
-      { name: 'ทะเลหม่าล่า', sales: 65, revenue: 45500, color: '#3b82f6' },
-      { name: 'ผักหม่าล่า', sales: 43, revenue: 25800, color: '#8b5cf6' }
-    ];
-    return products;
-  }, []);
-
-  // Performance metrics
-  const performanceMetrics = React.useMemo(() => {
-    const avgOrderValue = totalRevenue / (totalOrders || 1);
-    const todayOrders = filteredOrders.filter(o => 
-      dayjs(o.createdAt).isSame(dayjs(), 'day')
-    ).length;
-    
-    return [
-      {
-        title: 'ค่าเฉลี่ยต่อออเดอร์',
-        value: `฿${avgOrderValue.toFixed(0)}`,
-        icon: FaMoneyBillWave,
-        color: '#10b981',
-        change: '+5.2%'
-      },
-      {
-        title: 'ออเดอร์วันนี้',
-        value: todayOrders,
-        icon: FaShoppingCart,
-        color: '#3b82f6',
-        change: '+12.1%'
-      },
-      {
-        title: 'อัตราการแปลง',
-        value: '73.5%',
-        icon: FaTrendingUp,
-        color: '#f59e0b',
-        change: '+2.8%'
-      },
-      {
-        title: 'ผู้ใช้ออนไลน์',
-        value: '24',
-        icon: FaUsers,
-        color: '#ef4444',
-        change: 'แบบเรียลไทม์'
-      }
-    ];
-  }, [totalRevenue, totalOrders, filteredOrders]);
-
-  // Activity feed data
+  // activity
   const activityFeed = React.useMemo(() => {
-    const activities = [
-      {
-        id: 1,
+    const activities = [];
+
+    const recentOrders = filteredOrders
+      .sort((a, b) => dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf())
+      .slice(0, 3);
+
+    recentOrders.forEach(order => {
+      activities.push({
+        id: `order-${order.id}`,
         type: 'order',
         icon: FaShoppingCart,
-        message: 'ออเดอร์ใหม่ #1234 จากลูกค้า นายสมชาย',
-        time: dayjs().subtract(5, 'minutes'),
+        message: `ออเดอร์ใหม่ #${order.id} ${order.customerName ? `จาก ${order.customerName}` : 'จากลูกค้าทั่วไป'}`,
+        time: dayjs(order.createdAt),
         color: '#10b981'
-      },
-      {
-        id: 2,
+      });
+    });
+
+    const completedOrders = filteredOrders
+      .filter(o => o.status === 'completed')
+      .sort((a, b) => dayjs(b.updatedAt || b.createdAt).valueOf() - dayjs(a.updatedAt || a.createdAt).valueOf())
+      .slice(0, 2);
+
+    completedOrders.forEach(order => {
+      activities.push({
+        id: `completed-${order.id}`,
         type: 'payment',
         icon: FaMoneyBillWave,
-        message: 'ชำระเงินสำเร็จ ออเดอร์ #1233 จำนวน ฿480',
-        time: dayjs().subtract(12, 'minutes'),
+        message: `ออเดอร์ #${order.id} เสร็จสิ้น ยอดรวม ฿${Number(order.total || 0).toLocaleString()}`,
+        time: dayjs(order.updatedAt || order.createdAt),
         color: '#f59e0b'
-      },
-      {
-        id: 3,
+      });
+    });
+
+    const recentUsers = users
+      .filter(u => u.createdAt)
+      .sort((a, b) => dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf())
+      .slice(0, 2);
+
+    recentUsers.forEach(user => {
+      activities.push({
+        id: `user-${user.id}`,
         type: 'user',
         icon: FaUsers,
-        message: 'ผู้ใช้ใหม่ลงทะเบียน: นางสาวมารี',
-        time: dayjs().subtract(25, 'minutes'),
+        message: `ผู้ใช้ใหม่ลงทะเบียน: ${user.name || user.username}`,
+        time: dayjs(user.createdAt),
         color: '#3b82f6'
-      },
-      {
-        id: 4,
-        type: 'order',
-        icon: FaShoppingCart,
-        message: 'ออเดอร์ #1232 เสร็จสิ้น รอการส่งมอบ',
-        time: dayjs().subtract(38, 'minutes'),
-        color: '#10b981'
-      },
-      {
-        id: 5,
+      });
+    });
+
+    const lowStockProducts = products
+      .filter(p => p.stock !== undefined && p.stock < 10)
+      .slice(0, 2);
+
+    lowStockProducts.forEach(product => {
+      activities.push({
+        id: `stock-${product.id}`,
         type: 'alert',
         icon: FaBell,
-        message: 'สินค้า "หม่าล่าต้นตำรับ" เหลือน้อย (5 ชิ้น)',
-        time: dayjs().subtract(45, 'minutes'),
+        message: `สินค้า "${product.name}" เหลือน้อย (${product.stock} ชิ้น)`,
+        time: dayjs().subtract(Math.random() * 60, 'minutes'),
         color: '#ef4444'
-      }
-    ];
-    return activities;
-  }, []);
+      });
+    });
+
+    return activities
+      .sort((a, b) => b.time.valueOf() - a.time.valueOf())
+      .slice(0, 5);
+  }, [filteredOrders, users, products]);
 
   return (
-    <div className={`${styles.dashboardContainer} ${isDarkMode ? styles.darkMode : ''}`}>
-      {/* Dashboard Header */}
-      <div className={styles.dashboardHeader}>
-        <div className={styles.headerContent}>
-          <div className={styles.headerMain}>
-            <h1 className={styles.dashboardTitle}>
-              <FaChartLine className={styles.titleIcon} />
-              ภาพรวมร้านหม่าล่า
-            </h1>
-            <p className={styles.dashboardSubtitle}>
-              ยินดีต้อนรับกลับมา, Admin • {currentTime.format("dddd, DD MMMM YYYY")}
-            </p>
-          </div>
-          <div className={styles.widgetsContainer}>
-            {/* Clock Widget */}
-            <div className={styles.clockWidget}>
-              <div className={styles.widgetIcon}>
-                <FaClock />
-              </div>
-              <div className={styles.digitalClock}>
-                <div className={styles.timeDisplay}>
-                  {currentTime.format("HH:mm:ss")}
-                </div>
-                <div className={styles.dateDisplay}>
-                  {currentTime.format("DD/MM/YYYY")}
-                </div>
-              </div>
-            </div>
-            
-            {/* Weather Widget */}
-            <div className={styles.weatherWidget}>
-              <div className={styles.widgetIcon}>
-                <FaCloudSun />
-              </div>
-              <div className={styles.weatherInfo}>
-                <div className={styles.tempDisplay}>
-                  {weather.temp}°C
-                </div>
-                <div className={styles.locationDisplay}>
-                  {weather.location}
-                </div>
-                <div className={styles.weatherDetails}>
-                  <span className={styles.weatherDetail}>
-                    <FaTint /> {weather.humidity}%
-                  </span>
-                  <span className={styles.weatherDetail}>
-                    <FaWind /> {weather.windSpeed} km/h
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className={styles.headerActions}>
-          <button 
-            className={styles.themeToggle}
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            title="สลับธีม"
-          >
-            {isDarkMode ? <FaSun /> : <FaMoon />}
-          </button>
-          <button className={styles.actionButton} onClick={() => window.location.reload()}>
-            <FaRefresh />
-            รีเฟรช
-          </button>
-          <button className={styles.actionButton}>
-            <FaDownload />
-            ส่งออกรายงาน
-          </button>
-        </div>
-      </div>
-
+    <div className={styles.dashboardContainer}>
       {/* Quick Actions */}
       <div className={styles.quickActionsSection}>
         <h2 className={styles.sectionTitle}>การดำเนินการด่วน</h2>
@@ -445,58 +272,18 @@ export default function AdminDashboard() {
           })}
         </div>
       </div>
-      <div className={styles.filtersSection}>
-        <h2 className={styles.sectionTitle}>
-          <FaCalendarAlt className={styles.sectionIcon} />
-          ช่วงวันที่
-        </h2>
-        <div className={styles.filtersCard}>
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>
-              <span>ตั้งแต่</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className={styles.dateInput}
-              />
-            </label>
-
-            <label className={styles.filterLabel}>
-              <span>ถึง</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className={styles.dateInput}
-              />
-            </label>
-
-            <button 
-              className={styles.searchButton}
-              onClick={() => {}}
-              disabled={loading}
-            >
-              <FaSearch />
-              ค้นหา
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Statistics Section */}
       {loading ? (
         <div className={styles.loadingSection}>
-          <div className={styles.loadingSpinner}>
-            <FaRefresh className={styles.spinningIcon} />
-          </div>
+          <div className={styles.loadingSpinner} />
           <p>กำลังโหลดข้อมูล...</p>
         </div>
       ) : (
         <>
           <div className={styles.statsSection}>
             <h2 className={styles.sectionTitle}>
-              <FaTrendingUp className={styles.sectionIcon} />
+              <FaChartLine className={styles.sectionIcon} />
               สถิติสำคัญ
             </h2>
             <div className={styles.statsGrid}>
@@ -511,7 +298,7 @@ export default function AdminDashboard() {
                         }`}
                       >
                         {stat.isUp === null ? "" : stat.isUp ? 
-                          <FaTrendingUp /> : <FaTrendingDown />
+                          <FaArrowUp /> : <FaArrowDown />
                         }
                         {stat.change}
                       </div>
@@ -523,141 +310,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Chart Section */}
-          <div className={styles.chartSection}>
-            <h2 className={styles.sectionTitle}>
-              <FaChartLine className={styles.sectionIcon} />
-              แผนภูมิรายรับ
-            </h2>
-            <div className={styles.chartCard} ref={chartWrapRef}>
-              {dailyStats.length === 0 ? (
-                <div className={styles.noDataMessage}>
-                  <p>ไม่มีข้อมูลในช่วงวันที่ที่เลือก</p>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={360}>
-                  <LineChart data={dailyStats}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="dateISO"
-                      tickFormatter={fmtTick}
-                      interval="preserveStartEnd"
-                      minTickGap={compact ? 12 : 6}
-                    />
-                    <YAxis yAxisId="left" allowDecimals={false} />
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      tickFormatter={(v) => `฿${v.toLocaleString()}`}
-                    />
-                    <Tooltip
-                      labelFormatter={fmtTooltipLabel}
-                      formatter={(value, name) => {
-                        if (name === "รายรับ (บาท)") {
-                          return [`฿${Number(value).toLocaleString()}`, name];
-                        }
-                        return [value, name];
-                      }}
-                    />
-                    <Legend />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="orders"
-                      stroke="#dc2626"
-                      strokeWidth={3}
-                      name="จำนวนออเดอร์"
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke="#16a34a"
-                      strokeWidth={3}
-                      name="รายรับ (บาท)"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          {/* Performance Metrics */}
-          <div className={styles.performanceSection}>
-            <h2 className={styles.sectionTitle}>
-              <FaFire className={styles.sectionIcon} />
-              เมตริกส์ประสิทธิภาพ
-            </h2>
-            <div className={styles.metricsGrid}>
-              {performanceMetrics.map((metric, idx) => {
-                const Icon = metric.icon;
-                return (
-                  <div key={idx} className={styles.metricCard}>
-                    <div className={styles.metricIcon} style={{ backgroundColor: metric.color }}>
-                      <Icon />
-                    </div>
-                    <div className={styles.metricContent}>
-                      <div className={styles.metricTitle}>{metric.title}</div>
-                      <div className={styles.metricValue}>{metric.value}</div>
-                      <div className={styles.metricChange}>{metric.change}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Top Products Chart */}
-          <div className={styles.topProductsSection}>
-            <h2 className={styles.sectionTitle}>
-              <FaFire className={styles.sectionIcon} />
-              สินค้าขายดี
-            </h2>
-            <div className={styles.chartsContainer}>
-              <div className={styles.pieChartContainer}>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={topProducts}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={120}
-                      paddingAngle={5}
-                      dataKey="sales"
-                    >
-                      {topProducts.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value, name) => [`${value} ออเดอร์`, 'ยอดขาย']}
-                      labelFormatter={(label) => topProducts[label]?.name}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className={styles.productsList}>
-                {topProducts.map((product, idx) => (
-                  <div key={idx} className={styles.productItem}>
-                    <div 
-                      className={styles.productColor}
-                      style={{ backgroundColor: product.color }}
-                    ></div>
-                    <div className={styles.productInfo}>
-                      <div className={styles.productName}>{product.name}</div>
-                      <div className={styles.productStats}>
-                        {product.sales} ออเดอร์ • ฿{product.revenue.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Orders Table */}
+          {/* Recent Orders */}
           <div className={styles.recentOrdersSection}>
             <h2 className={styles.sectionTitle}>
               <FaShoppingCart className={styles.sectionIcon} />
@@ -713,7 +366,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Activity Feed */}
+          {/* Activity */}
           <div className={styles.activitySection}>
             <h2 className={styles.sectionTitle}>
               <FaBell className={styles.sectionIcon} />
@@ -742,11 +395,6 @@ export default function AdminDashboard() {
                     </div>
                   );
                 })}
-              </div>
-              <div className={styles.activityFooter}>
-                <button className={styles.viewAllButton}>
-                  ดูทั้งหมด
-                </button>
               </div>
             </div>
           </div>

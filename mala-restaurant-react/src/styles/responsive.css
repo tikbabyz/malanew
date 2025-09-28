@@ -1,0 +1,205 @@
+/* ===========================
+   GLOBAL RESPONSIVE STYLES
+=========================== */
+
+/* Import CSS Variables from components */
+@import url('./components/ResponsiveTable.module.css');
+
+/* Global Responsive Utilities */
+.responsiveContainer {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.responsiveGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+.responsiveCard {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.responsiveButton {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.responsiveButton:hover {
+  transform: translateY(-1px);
+}
+
+.responsiveButton:active {
+  transform: translateY(0);
+}
+
+.responsiveInput {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.responsiveInput:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* ===========================
+   BREAKPOINT UTILITIES
+=========================== */
+
+/* Mobile First - Show by default, hide on larger screens */
+.showMobile {
+  display: block;
+}
+
+.hideMobile {
+  display: none;
+}
+
+.showTablet {
+  display: none;
+}
+
+.hideTablet {
+  display: block;
+}
+
+.showDesktop {
+  display: none;
+}
+
+.hideDesktop {
+  display: block;
+}
+
+/* Tablet (768px+) */
+@media (min-width: 768px) {
+  .responsiveContainer {
+    padding: 0 1.5rem;
+  }
+  
+  .responsiveGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .showMobile {
+    display: none;
+  }
+  
+  .hideMobile {
+    display: block;
+  }
+  
+  .showTablet {
+    display: block;
+  }
+  
+  .hideTablet {
+    display: none;
+  }
+}
+
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
+  .responsiveContainer {
+    padding: 0 2rem;
+  }
+  
+  .responsiveGrid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+  }
+  
+  .showDesktop {
+    display: block;
+  }
+  
+  .hideDesktop {
+    display: none;
+  }
+}
+
+/* ===========================
+   ACCESSIBILITY IMPROVEMENTS
+=========================== */
+
+/* Focus visible for keyboard navigation */
+.responsiveButton:focus-visible,
+.responsiveInput:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .responsiveCard {
+    border-width: 2px;
+  }
+  
+  .responsiveButton {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .responsiveButton,
+  .responsiveInput {
+    transition: none;
+  }
+  
+  .responsiveButton:hover {
+    transform: none;
+  }
+}
+
+/* ===========================
+   PRINT STYLES
+=========================== */
+
+@media print {
+  .showMobile,
+  .showTablet,
+  .showDesktop {
+    display: block !important;
+  }
+  
+  .hideMobile,
+  .hideTablet,
+  .hideDesktop {
+    display: none !important;
+  }
+  
+  .responsiveButton {
+    background: white !important;
+    color: black !important;
+    border: 1px solid black !important;
+  }
+}
