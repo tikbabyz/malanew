@@ -1,26 +1,29 @@
-# Core Framework
-flask==2.3.3
+# ===== Web Core =====
+Flask==3.0.3
 flask-cors==4.0.0
-flask-sqlalchemy==3.0.5
-flask-migrate==4.0.5
+flask-sqlalchemy==3.1.1
+flask-migrate==4.0.7
+Werkzeug>=3.0.0
 
-# MySQL Database
+# ===== MySQL =====
 PyMySQL==1.1.0
 cryptography==41.0.4
 SQLAlchemy>=2.0
 
-# AI & Computer Vision
-ultralytics==8.0.196
-opencv-python-headless==4.8.1.78
-torch==2.0.1
-torchvision==0.15.2
-Pillow==10.0.1
-pillow-heif==0.13.0
+# ===== AI stack (Python 3.13, CPU) =====
+torch==2.8.0
+torchvision==0.23.0
+torchaudio==2.8.0
+ultralytics>=8.1.0
 
-# Utilities
-numpy==1.24.3
+# ภาพ/ตัวประมวลผล
+numpy>=2.1
+opencv-python-headless>=4.10
+Pillow>=10.0.0
+pillow-heif>=0.13.0
+
+# ===== Utilities =====
 python-dotenv==1.0.0
-werkzeug==2.3.7
 
-# Production Server
+# ===== Production Server =====
 gunicorn==21.2.0
