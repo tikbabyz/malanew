@@ -1,9 +1,26 @@
-flask
-flask-cors
-ultralytics
-opencv-python
-Pillow
-numpy
-Flask-SQLAlchemy
-psycopg2-binary
+# Core Framework
+flask==2.3.3
+flask-cors==4.0.0
+flask-sqlalchemy==3.0.5
+flask-migrate==4.0.5
+
+# MySQL Database
+PyMySQL==1.1.0
+cryptography==41.0.4
 SQLAlchemy>=2.0
+
+# AI & Computer Vision
+ultralytics==8.0.196
+opencv-python-headless==4.8.1.78
+torch==2.0.1
+torchvision==0.15.2
+Pillow==10.0.1
+pillow-heif==0.13.0
+
+# Utilities
+numpy==1.24.3
+python-dotenv==1.0.0
+werkzeug==2.3.7
+
+# Production Server
+gunicorn==21.2.0
