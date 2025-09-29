@@ -89,6 +89,14 @@ export default function WorkflowPOS() {
     loadProducts, 
     loadColorPrices 
   } = useDataStore();
+  const beverageProducts = useMemo(() => {
+    const keywordTh = "เครื่องดื่ม";
+    const keywordEn = "beverage";
+    return (products || []).filter((product) => {
+      const category = (product?.category || "").toLowerCase();
+      return category.includes(keywordTh) || category.includes(keywordEn);
+    });
+  }, [products]);
   const currentUserName = user?.displayName || user?.name || user?.username || "พนักงาน";
 
   // Loading state
@@ -111,8 +119,6 @@ export default function WorkflowPOS() {
   const canvasRef = useRef(null);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
-  const [bbox, setBbox] = useState(null);
-  const [drag, setDrag] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -143,7 +149,7 @@ export default function WorkflowPOS() {
       nav("/login", { replace: true });
       return;
     }
-    if (user.role !== "STAFF") {
+    if (user.role !== "STAFF" && user.role !== "ADMIN") {
       nav("/", { replace: true });
       return;
     }
@@ -170,7 +176,7 @@ export default function WorkflowPOS() {
       }
     };
 
-    if (user && user.role === "STAFF") {
+    if (user && (user.role === "STAFF" || user.role === "ADMIN")) {
       loadInitialData();
     }
   }, [user, loadProducts, loadColorPrices]);
@@ -397,8 +403,6 @@ export default function WorkflowPOS() {
         
         setFile(capturedFile);
         setPreview(URL.createObjectURL(capturedFile));
-        setBbox(null);
-        setDrag(null);
         setResult(null);
         setError("");
         stopCamera();
@@ -417,8 +421,6 @@ export default function WorkflowPOS() {
     setError("");
     setFile(f);
     setPreview(URL.createObjectURL(f));
-    setBbox(null);
-    setDrag(null);
     setResult(null);
   };
 
@@ -433,7 +435,7 @@ export default function WorkflowPOS() {
     setResult(null);
     
     try {
-      const res = await API.detectImage(file, bbox);
+      const res = await API.detectImage(file);
       setResult(res);
     } catch (err) {
       setError(String(err.message || err));
@@ -791,66 +793,6 @@ export default function WorkflowPOS() {
     resetPaidPersons();
   }, [splitMode, splitPersons]);
 
-  // Mouse/Touch handlers for detection
-  const onMouseDown = (e) => {
-    if (!imgRef.current) return;
-    const r = imgRef.current.getBoundingClientRect();
-    setDrag({ x1: e.clientX - r.left, y1: e.clientY - r.top, x2: e.clientX - r.left, y2: e.clientY - r.top });
-  };
-
-  const onMouseMove = (e) => {
-    if (!drag || !imgRef.current) return;
-    const r = imgRef.current.getBoundingClientRect();
-    setDrag((d) => ({ ...d, x2: e.clientX - r.left, y2: e.clientY - r.top }));
-  };
-
-  const onMouseUp = () => {
-    if (!drag || !imgRef.current) return;
-    const el = imgRef.current;
-    const rect = el.getBoundingClientRect();
-    const sx = el.naturalWidth / rect.width;
-    const sy = el.naturalHeight / rect.height;
-    const x1 = Math.max(0, Math.min(drag.x1, drag.x2)) * sx;
-    const y1 = Math.max(0, Math.min(drag.y1, drag.y2)) * sy;
-    const x2 = Math.min(rect.width, Math.max(drag.x1, drag.x2)) * sx;
-    const y2 = Math.min(rect.height, Math.max(drag.y1, drag.y2)) * sy;
-    setBbox({ x1: Math.round(x1), y1: Math.round(y1), x2: Math.round(x2), y2: Math.round(y2) });
-    setDrag(null);
-  };
-
-  // Touch handlers for mobile cropping
-  const onTouchStart = (e) => {
-    e.preventDefault(); // ป้องกันการ scroll
-    if (e.touches && e.touches.length > 0 && imgRef.current) {
-      const touch = e.touches[0];
-      const r = imgRef.current.getBoundingClientRect();
-      setDrag({ 
-        x1: touch.clientX - r.left, 
-        y1: touch.clientY - r.top, 
-        x2: touch.clientX - r.left, 
-        y2: touch.clientY - r.top 
-      });
-    }
-  };
-
-  const onTouchMove = (e) => {
-    e.preventDefault(); // ป้องกันการ scroll
-    if (e.touches && e.touches.length > 0 && drag && imgRef.current) {
-      const touch = e.touches[0];
-      const r = imgRef.current.getBoundingClientRect();
-      setDrag((d) => ({ 
-        ...d, 
-        x2: touch.clientX - r.left, 
-        y2: touch.clientY - r.top 
-      }));
-    }
-  };
-
-  const onTouchEnd = (e) => {
-    e.preventDefault(); // ป้องกันการ scroll
-    onMouseUp(); // ใช้ logic เดียวกันกับ mouse
-  };
-
   // ในการสร้าง order หรือชำระเงิน ให้ใช้ยอดรวมหลังหักส่วนลด
   const getDiscountedTotal = () => {
     return +(totals.total * (1 - discount / 100)).toFixed(2);
@@ -949,7 +891,7 @@ export default function WorkflowPOS() {
               {/* Product Selection */}
               <div className={styles.productSection}>
                 <h3 className={styles.sectionTitle}>รายการสินค้า</h3>
-                <ProductPicker products={products} onAdd={addProduct} />
+                <ProductPicker products={beverageProducts} onAdd={addProduct} />
               </div>
 
               {/* Cart */}
@@ -1127,17 +1069,8 @@ export default function WorkflowPOS() {
 
                 {preview && (
                   <div className={styles.previewSection}>
-                    <div className={styles.touchInstructions}>
-                      <span style={{ fontSize: '1.1rem' }}>�</span> ลากนิ้วเพื่อเลือกพื้นที่ที่ต้องการตรวจจับสินค้า
-                    </div>
                     <div
                       className={styles.imageContainer}
-                      onMouseDown={onMouseDown}
-                      onMouseMove={onMouseMove}
-                      onMouseUp={onMouseUp}
-                      onTouchStart={onTouchStart}
-                      onTouchMove={onTouchMove}
-                      onTouchEnd={onTouchEnd}
                     >
                       <img 
                         ref={imgRef} 
@@ -1147,29 +1080,6 @@ export default function WorkflowPOS() {
                         draggable={false}
                       />
                       
-                      {drag && (
-                        <div
-                          className={styles.dragBox}
-                          style={{
-                            left: Math.min(drag.x1, drag.x2),
-                            top: Math.min(drag.y1, drag.y2),
-                            width: Math.abs(drag.x2 - drag.x1),
-                            height: Math.abs(drag.y2 - drag.y1),
-                          }}
-                        />
-                      )}
-                      
-                      {bbox && imgRef.current && (() => {
-                        const el = imgRef.current;
-                        const rect = el.getBoundingClientRect();
-                        const sx = rect.width / el.naturalWidth;
-                        const sy = rect.height / el.naturalHeight;
-                        const left = bbox.x1 * sx;
-                        const top = bbox.y1 * sy;
-                        const width = (bbox.x2 - bbox.x1) * sx;
-                        const height = (bbox.y2 - bbox.y1) * sy;
-                        return <div className={styles.bboxBox} style={{ left, top, width, height }} />;
-                      })()}
                     </div>
 
                     <div className={styles.detectActions}>
@@ -1190,13 +1100,6 @@ export default function WorkflowPOS() {
                           </>
                         )}
                       </button>
-                      
-                      <button 
-                        className={styles.clearBtn}
-                        onClick={() => setBbox(null)}
-                      >
-                        ลบกรอบ
-                      </button>
                     </div>
 
                     {error && (
@@ -1205,10 +1108,6 @@ export default function WorkflowPOS() {
                         {error}
                       </div>
                     )}
-
-                    <p className={styles.tip}>
-                      แนะนำ: ลากกรอบเฉพาะ "กองไม้" เพื่อลดการจับฉากหลัง
-                    </p>
                   </div>
                 )}
               </div>
