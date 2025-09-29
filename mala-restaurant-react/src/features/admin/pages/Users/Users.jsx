@@ -3,7 +3,7 @@ import { useDataStore } from '@store/data.js'
 import ConfirmModal from "@shared/components/ConfirmModal/ConfirmModal.jsx"
 import styles from './Users.module.css'
 import { makePasswordHash } from '@utils/hash.js'
-import { 
+import {
   FaUsers, 
   FaUserPlus, 
   FaEdit, 
@@ -25,6 +25,57 @@ import {
   FaSpinner,
   FaExclamationTriangle
 } from 'react-icons/fa'
+
+
+const PASSWORD_RULES = [
+  { key: 'length', label: 'อย่างน้อย 8 ตัวอักษร', test: (pwd) => pwd.length >= 8 },
+  { key: 'uppercase', label: 'มีตัวอักษรพิมพ์ใหญ่ (A-Z)', test: (pwd) => /[A-Z]/.test(pwd) },
+  { key: 'lowercase', label: 'มีตัวอักษรพิมพ์เล็ก (a-z)', test: (pwd) => /[a-z]/.test(pwd) },
+  { key: 'number', label: 'มีตัวเลข (0-9)', test: (pwd) => /[0-9]/.test(pwd) },
+  { key: 'special', label: 'มีอักขระพิเศษ (!@#$...)', test: (pwd) => /[^A-Za-z0-9]/.test(pwd) }
+]
+
+const analyzePassword = (pwd = '') => {
+  const password = pwd || ''
+  const checks = PASSWORD_RULES.map((rule) => ({
+    key: rule.key,
+    label: rule.label,
+    passed: rule.test(password)
+  }))
+
+  const score = checks.filter((rule) => rule.passed).length
+  const max = checks.length
+  const issues = checks.filter((rule) => !rule.passed).map((rule) => rule.label)
+
+  let level = 'weak'
+  let label = 'รหัสผ่านอ่อน'
+
+  if (!password) {
+    level = 'weak'
+    label = 'ยังไม่ได้ตั้งรหัสผ่าน'
+  } else if (score <= 2) {
+    level = 'weak'
+    label = 'รหัสผ่านอ่อน'
+  } else if (score === 3) {
+    level = 'fair'
+    label = 'รหัสผ่านปานกลาง'
+  } else if (score === 4) {
+    level = 'good'
+    label = 'รหัสผ่านค่อนข้างดี'
+  } else if (score === 5) {
+    level = 'strong'
+    label = 'รหัสผ่านปลอดภัย'
+  }
+
+  return {
+    level,
+    label,
+    score,
+    max,
+    issues,
+    checks
+  }
+}
 
 
 /** ===== Permissions & Role presets ===== */
@@ -104,27 +155,25 @@ export default function Users(){
   }, [])
 
   /** ========= password strength checker ========= */
-const strongPasswordIssues = (pwd='') => {
-  const fail = [];
-  if (pwd.length < 8) fail.push("อย่างน้อย 8 ตัว");
-  if (!/[A-Z]/.test(pwd)) fail.push("มี A-Z");
-  if (!/[a-z]/.test(pwd)) fail.push("มี a-z");
-  if (!/[0-9]/.test(pwd)) fail.push("มีเลข 0-9");
-  if (!/[^A-Za-z0-9]/.test(pwd)) fail.push("มีอักขระพิเศษ");
-  return fail;
-};
+  const passwordStrength = React.useMemo(
+    () => analyzePassword(form.password || ''),
+    [form.password]
+  )
 
   /** ========= validate ========= */
   const validate = () => {
     const e = {}
-    if (!form.username?.trim()) e.username = 'กรุณากรอกชื่อผู้ใช้'
-    if (!editId && !form.password?.trim()) e.password = 'กรุณาตั้งรหัสผ่าน'
+    const trimmedUsername = form.username?.trim() || ''
+    const trimmedPassword = form.password?.trim() || ''
+
+    if (!trimmedUsername) e.username = 'กรุณากรอกชื่อผู้ใช้'
+    if (!editId && !trimmedPassword) e.password = 'กรุณาตั้งรหัสผ่าน'
     if (!form.name?.trim()) e.name = 'กรุณากรอกชื่อ-นามสกุล'
     if (!form.role) e.role = 'กรุณาเลือกสิทธิ์การเข้าถึง'
 
     // เช็คความปลอดภัยเฉพาะตอน "สร้างใหม่" หรือถ้ากรอกจะเปลี่ยนรหัส
-    if (!editId || form.password?.trim()) {
-      const issues = strongPasswordIssues(form.password || '')
+    if (trimmedPassword) {
+      const issues = analyzePassword(trimmedPassword).issues
       if (issues.length) e.password = `รหัสผ่านไม่ปลอดภัย: ${issues.join(' · ')}`
     }
 
@@ -339,7 +388,17 @@ const strongPasswordIssues = (pwd='') => {
                   className={`${styles.input} ${errors.password?styles.inputInvalid:''}`}
                   placeholder={editId ? 'เว้นว่างหากไม่ต้องการเปลี่ยน' : 'ตั้งรหัสผ่าน'}
                   value={form.password}
-                  onChange={e=>setForm({...form,password:e.target.value})}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setForm((prev) => ({ ...prev, password: value }))
+                    if (errors.password) {
+                      setErrors((prev) => {
+                        const next = { ...prev }
+                        delete next.password
+                        return next
+                      })
+                    }
+                  }}
                 />
                 <button
                   type="button"
@@ -350,6 +409,37 @@ const strongPasswordIssues = (pwd='') => {
                 </button>
               </div>
               {errors.password && <p className={styles.errorText}>{errors.password}</p>}
+              {form.password && (
+                <div className={`${styles.passwordStrength} ${styles[passwordStrength.level]}`}>
+                  <div className={styles.passwordStrengthHeader}>
+                    <span className={styles.passwordStrengthLabel}>{passwordStrength.label}</span>
+                    <span className={styles.passwordStrengthScore}>
+                      {passwordStrength.score}/{passwordStrength.max}
+                    </span>
+                  </div>
+                  <div className={styles.passwordStrengthBar}>
+                    <div
+                      className={styles.passwordStrengthFill}
+                      style={{ width: `${(passwordStrength.score / passwordStrength.max) * 100}%` }}
+                    />
+                  </div>
+                  <ul className={styles.passwordChecklist}>
+                    {passwordStrength.checks.map((rule) => (
+                      <li
+                        key={rule.key}
+                        className={`${styles.passwordChecklistItem} ${rule.passed ? styles.pass : styles.fail}`}
+                      >
+                        {rule.passed ? (
+                          <FaCheckCircle className={styles.checkIcon} />
+                        ) : (
+                          <FaTimesCircle className={styles.checkIcon} />
+                        )}
+                        <span>{rule.label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className={styles.field}>
