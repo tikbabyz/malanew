@@ -1,14 +1,11 @@
 import React from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import AdminNavigation from "@features/admin/components/AdminNavigation/AdminNavigation.jsx"
-import { ClockWidget, WeatherWidget } from "@features/admin/components/widgets"
+import { ClockWidget } from "@features/admin/components/widgets"
 import styles from './AdminLayout.module.css'
 import { 
   FaChartLine, 
   FaSync,
-  FaMoon,
-  FaSun,
-  FaDownload,
   FaBars,
   FaTimes
 } from 'react-icons/fa'
@@ -19,9 +16,6 @@ dayjs.locale('th')
 
 export default function AdminLayout() {
   const location = useLocation()
-  
-  // Dark mode state
-  const [isDarkMode, setIsDarkMode] = React.useState(false)
   
   // Mobile sidebar state
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false)
@@ -73,22 +67,8 @@ export default function AdminLayout() {
     }
   }, [isMobileSidebarOpen, screenSize])
   
-  // Apply dark mode class to document body
-  React.useEffect(() => {
-    if (isDarkMode) {
-      document.body.classList.add('darkMode')
-    } else {
-      document.body.classList.remove('darkMode')
-    }
-    
-    // Cleanup when component unmounts
-    return () => {
-      document.body.classList.remove('darkMode')
-    }
-  }, [isDarkMode])
-  
   return (
-    <div className={`${styles.adminContainer} ${isDarkMode ? styles.darkMode : ''} ${styles[screenSize]}`}>
+    <div className={`${styles.adminContainer} ${styles[screenSize]}`}>
       {/* Enhanced Header with Dashboard Widgets */}
       <div className={styles.adminHeader}>
         <div className={styles.headerContent}>
@@ -124,28 +104,17 @@ export default function AdminLayout() {
           {screenSize !== 'mobile' && (
             <div className={styles.headerWidgets}>
               <ClockWidget />
-              <WeatherWidget />
             </div>
           )}
           
           {/* Header Actions */}
-          <div className={styles.headerActions}>
-            <button 
-              className={styles.themeToggle}
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              title="สลับธีม"
-            >
-              {isDarkMode ? <FaSun /> : <FaMoon />}
-            </button>
-            {screenSize !== 'mobile' && (
-              <>
-                <button className={styles.actionButton} title="รีเฟรชข้อมูล">
-                  <FaSync />
-                </button>
-                
-              </>
-            )}
-          </div>
+          {screenSize !== 'mobile' && (
+            <div className={styles.headerActions}>
+              <button className={styles.actionButton} title="รีเฟรชข้อมูล">
+                <FaSync />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
