@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 // import { useDataStore } from "../../store/data.js";
 import styles from './Payments.module.css';
-import API, { API_BASE } from '../../services/api';
+import API, { getImageUrl } from '../../services/api';
 import { 
   FaQrcode, 
   FaUpload, 
@@ -20,6 +20,7 @@ import {
 export default function Payments() {
   const navigate = useNavigate();
   const [preview, setPreview] = useState("");
+  const [qrImagePath, setQrImagePath] = useState("");
   const [qrUrl, setQrUrl] = useState("");
   const [qrLabelLocal, setQrLabelLocal] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -31,7 +32,9 @@ export default function Payments() {
     (async () => {
       try {
         const data = await API.paymentSettings.get();
-        setPreview(data.qr_image || "");
+        const initialPath = data.qr_image_path || "";
+        setQrImagePath(initialPath);
+        setPreview(getImageUrl(initialPath || data.qr_image || "") || "");
         setQrLabelLocal(data.qr_label || "");
       } catch (error) {
         console.error('Error loading payment settings:', error);
@@ -63,11 +66,10 @@ export default function Payments() {
       // อัปโหลดไฟล์ผ่าน API สำหรับ QR Code
       const response = await API.uploadQRCode(file);
       
-      if (response && response.imageUrl) {
-        const fullImageUrl = response.imageUrl.startsWith('http') 
-          ? response.imageUrl 
-          : `${API_BASE}${response.imageUrl}`;
-        setPreview(fullImageUrl);
+      if (response && (response.filename || response.relativeUrl || response.imageUrl)) {
+        const nextPath = response.filename || response.relativeUrl || response.imageUrl;
+        setQrImagePath(nextPath);
+        setPreview(getImageUrl(nextPath) || "");
         setQrUrl('');
       } else {
         throw new Error('ไม่ได้รับ URL ของรูปภาพจากเซิร์ฟเวอร์');
@@ -82,9 +84,11 @@ export default function Payments() {
   };
 
   const handleUrlChange = (e) => {
-    setQrUrl(e.target.value);
-    if (e.target.value) {
-      setPreview(e.target.value);
+    const value = e.target.value;
+    setQrUrl(value);
+    if (value) {
+      setPreview(value);
+      setQrImagePath('');
     }
   };
 
@@ -93,7 +97,7 @@ export default function Payments() {
     if (!qrLabelLocal.trim()) {
       newErrors.label = 'กรุณาใส่ป้ายกำกับ';
     }
-    if (!preview && !qrUrl) {
+    if (!qrImagePath && !preview && !qrUrl) {
       newErrors.image = 'กรุณาอัปโหลดรูป QR Code หรือใส่ URL';
     }
     if (Object.keys(newErrors).length > 0) {
@@ -101,9 +105,13 @@ export default function Payments() {
       return;
     }
     try {
-      const finalQR = preview || qrUrl || "";
+      const finalQR = qrImagePath || qrUrl || preview || "";
       const finalLabel = qrLabelLocal.trim() || "สแกนจ่ายด้วยพร้อมเพย์";
-      await API.paymentSettings.set({ qr_image: finalQR, qr_label: finalLabel });
+      await API.paymentSettings.set({
+        qr_image: finalQR,
+        qr_image_path: qrImagePath,
+        qr_label: finalLabel,
+      });
       setErrors({});
       alert("✅ บันทึก QR Code เรียบร้อยแล้ว");
       navigate("/admin");
@@ -115,8 +123,9 @@ export default function Payments() {
 
   const handleClear = async () => {
     if (confirm('คุณแน่ใจหรือไม่ที่จะลบ QR Code?')) {
-      await API.paymentSettings.set({ qr_image: "", qr_label: "สแกนจ่ายด้วยพร้อมเพย์" });
+      await API.paymentSettings.set({ qr_image: "", qr_image_path: "", qr_label: "สแกนจ่ายด้วยพร้อมเพย์" });
       setPreview("");
+      setQrImagePath("");
       setQrUrl("");
       setQrLabelLocal("สแกนจ่ายด้วยพร้อมเพย์");
       setErrors({});
@@ -143,7 +152,7 @@ export default function Payments() {
                 <button 
                   className={styles.previewButton}
                   onClick={() => setShowPreview(true)}
-                  disabled={!preview && !qrUrl}
+                  disabled={!qrImagePath && !preview && !qrUrl}
                 >
                   <FaEye />
                   ดูตัวอย่าง
@@ -243,10 +252,10 @@ export default function Payments() {
               <div className={styles.previewSection}>
                 <h3 className={styles.previewTitle}>ตัวอย่าง QR Code</h3>
                 <div className={styles.qrPreview}>
-                  {(preview || qrUrl) ? (
+                  {(qrImagePath || preview || qrUrl) ? (
                     <div className={styles.qrContainer}>
                       <img
-                        src={preview || qrUrl}
+                        src={preview || getImageUrl(qrImagePath) || qrUrl}
                         alt="QR Code Preview"
                         className={styles.qrImage}
                         onError={(e) => {
@@ -286,7 +295,7 @@ export default function Payments() {
                 <button 
                   onClick={handleClear}
                   className={styles.clearButton}
-                  disabled={isUploading || (!preview && !qrUrl)}
+      disabled={isUploading || (!qrImagePath && !preview && !qrUrl)}
                 >
                   <FaTrash />
                   ลบ QR Code
@@ -300,7 +309,7 @@ export default function Payments() {
       </div>
 
       {/* Preview Modal */}
-      {showPreview && (preview || qrUrl) && (
+      {showPreview && (qrImagePath || preview || qrUrl) && (
         <div className={styles.modalBackdrop} onClick={() => setShowPreview(false)}>
           <div className={styles.previewModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -318,7 +327,7 @@ export default function Payments() {
                   <h4><FaMoneyBillWave /> ชำระเงิน</h4>
                   <div className={styles.qrSection}>
                     <img 
-                      src={preview || qrUrl} 
+                      src={preview || getImageUrl(qrImagePath) || qrUrl} 
                       alt="QR Code" 
                       className={styles.previewQrImage}
                     />

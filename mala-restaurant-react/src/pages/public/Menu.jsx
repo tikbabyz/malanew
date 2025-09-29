@@ -216,9 +216,9 @@ export default function Menu() {
                   >
                     {/* Product Image */}
                     <div className={styles.productImageContainer}>
-                      {!hasImageError && product.image ? (
+                      {!hasImageError && (product.image || product.imagePath) ? (
                         <img
-                          src={getImageUrl(product.image)}  // ✅ ใช้ getImageUrl แทน
+                          src={getImageUrl(product.imagePath || product.image)}  // ✅ ใช้ getImageUrl แทน
                           alt={product.name}
                           className={styles.productImage}
                           loading="lazy"

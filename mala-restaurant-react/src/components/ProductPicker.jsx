@@ -1,7 +1,7 @@
 import React from "react";
 import { FaSearch, FaUtensils } from "react-icons/fa";
 import { useDataStore } from "../store/data.js";
-import API from "../services/api";
+import API, { getImageUrl } from "../services/api";
 import styles from "./ProductPicker.module.css";
 
 export default function ProductPicker({ products: productsProp, onAdd }) {
@@ -70,13 +70,13 @@ export default function ProductPicker({ products: productsProp, onAdd }) {
               >
                 <div className={styles.thumb}>
                   <img
-                    src={p.image || "/images/logo.png"}
+                    src={getImageUrl(p.imagePath || p.image) || "/images/logo.png"}
                     alt={p.name}
                     className={styles.img}
                     onError={onImgErr}
                     loading="lazy"
                   />
-                  <div className={`${styles.placeholder} placeholder`} style={{ display: p.image ? 'none' : 'flex' }}>
+                  <div className={`${styles.placeholder} placeholder`} style={{ display: (p.image || p.imagePath) ? 'none' : 'flex' }}>
                     <FaUtensils className={styles.placeholderIcon} />
                     <span className={styles.placeholderText}>ไม่มีรูป</span>
                   </div>

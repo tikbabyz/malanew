@@ -54,15 +54,19 @@ def upload_product_image():
     file_path = target_dir / filename
     file.save(file_path)
 
-    image_url = f"/api/products/images/{filename}"
+    relative_url = f"/api/products/images/{filename}"
+    absolute_url = abs_url_for("uploads.serve_product_image", filename=filename)
     print(f"✅ Product image uploaded: {filename} ({size} bytes)")
 
-    return jsonify({
-        "success": True,
-        "imageUrl": image_url,
-        "filename": filename,
-        "size": size,
-    })
+    return jsonify(
+        {
+            "success": True,
+            "imageUrl": absolute_url,
+            "relativeUrl": relative_url,
+            "filename": filename,
+            "size": size,
+        }
+    )
 
 
 @uploads_bp.get("/api/products/images/<path:filename>")
@@ -93,15 +97,19 @@ def upload_qr_code():
     file_path = target_dir / filename
     file.save(file_path)
 
-    image_url = f"/api/qr/images/{filename}"
+    relative_url = f"/api/qr/images/{filename}"
+    absolute_url = abs_url_for("uploads.serve_qr_image", filename=filename)
     print(f"✅ QR Code uploaded: {filename} ({size} bytes)")
 
-    return jsonify({
-        "success": True,
-        "imageUrl": image_url,
-        "filename": filename,
-        "size": size,
-    })
+    return jsonify(
+        {
+            "success": True,
+            "imageUrl": absolute_url,
+            "relativeUrl": relative_url,
+            "filename": filename,
+            "size": size,
+        }
+    )
 
 
 @uploads_bp.get("/api/qr/images/<path:filename>")

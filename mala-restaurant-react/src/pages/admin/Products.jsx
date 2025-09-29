@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useDataStore } from '../../store/data.js';
 import ConfirmModal from '../../components/ConfirmModal.jsx';
 import styles from './Products.module.css';
-import API, { API_BASE } from '../../services/api';
+import API, { getImageUrl } from '../../services/api';
 import { 
   FaEdit, 
   FaTrash, 
@@ -313,7 +313,7 @@ export default function Products() {
       name: product.name || '',
       price: product.price || '',
       category: product.category || '',
-      image: product.image || '',
+      image: product.imagePath || product.image || '',
       color: product.color || '',
       stock: product.stock || 0
     });
@@ -448,25 +448,22 @@ export default function Products() {
 
     try {
       setIsUploading(true);
-      
+
       // Upload to server via API
       const response = await API.uploadProductImage(file);
-      
-      if (response && response.imageUrl) {
-        // สร้าง absolute URL สำหรับรูปภาพ
-        const fullImageUrl = response.imageUrl.startsWith('http') 
-          ? response.imageUrl 
-          : `${API_BASE}${response.imageUrl}`;
-          
+
+      if (response && (response.filename || response.relativeUrl || response.imageUrl)) {
+        const nextPath = response.filename || response.relativeUrl || response.imageUrl;
+
         setFormData(prev => ({
           ...prev,
-          image: fullImageUrl
+          image: nextPath
         }));
-        console.log('✅ Image uploaded successfully:', fullImageUrl);
+        console.log('✅ Image uploaded successfully:', nextPath);
       } else {
-        throw new Error('ไม่ได้รับ URL ของรูปภาพจากเซิร์ฟเวอร์');
+        throw new Error('ไม่สามารถรับข้อมูลไฟล์จากเซิร์ฟเวอร์ได้');
       }
-      
+
     } catch (error) {
       console.error('Error uploading image:', error);
       alert('เกิดข้อผิดพลาดในการอัพโหลดรูปภาพ: ' + (error.message || error));
@@ -556,10 +553,10 @@ export default function Products() {
                 {filteredProducts.map(product => (
                   <div key={product.id} className={`${styles.productCard} ${(product.stock || 0) === 0 ? styles.outOfStock : ''}`}>
                     <div className={styles.productImage}>
-                      {product.image ? (
+                      {product.image || product.imagePath ? (
                         <div className={styles.imageContainer}>
                           <img 
-                            src={product.image} 
+                            src={getImageUrl(product.imagePath || product.image)} 
                             alt={product.name}
                             className={(product.stock || 0) === 0 ? styles.outOfStockImage : ''}
                           />
@@ -839,8 +836,8 @@ export default function Products() {
                           </label>
                         ) : (
                           <div className={styles.imagePreview}>
-                            <img 
-                              src={formData.image} 
+                            <img
+                              src={getImageUrl(formData.image)} 
                               alt="รูปสินค้า" 
                               className={styles.previewImage}
                               onError={(e) => {

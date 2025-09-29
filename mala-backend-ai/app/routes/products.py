@@ -1,10 +1,13 @@
 from pathlib import Path
+from urllib.parse import urlparse
 
 from flask import Blueprint, current_app, jsonify, request
 
 from app.database import db
 from app.models import ColorPrice, Product
-from app.utils import serialize_product
+from flask import request
+
+from app.utils import normalize_product_image, serialize_product
 
 
 products_bp = Blueprint("products", __name__, url_prefix="/api")
@@ -29,6 +32,8 @@ def create_product():
     if existing:
         return jsonify({"error": "มีสินค้านี้อยู่แล้ว"}), 400
 
+    image_value = normalize_product_image(data.get("image"), request.host)
+
     product = Product(
         name=data["name"],
         price=data.get("price", 0),
@@ -36,7 +41,7 @@ def create_product():
         stock=data.get("stock", 0),
         active=bool(data.get("active", True)),
         color=data.get("color"),
-        image=data.get("image"),
+        image=image_value,
     )
 
     db.session.add(product)
@@ -62,7 +67,7 @@ def update_product(product_id: int):
     if "color" in data:
         product.color = data.get("color")
     if "image" in data:
-        product.image = data.get("image")
+        product.image = normalize_product_image(data.get("image"), request.host)
 
     db.session.commit()
     return jsonify(serialize_product(product))
@@ -73,14 +78,23 @@ def delete_product(product_id: int):
     product = Product.query.get_or_404(product_id)
 
     if product.image:
-        filename = product.image.split("/")[-1]
-        image_path = Path(current_app.config["PRODUCTS_UPLOAD_DIR"]) / filename
-        if image_path.exists():
-            try:
-                image_path.unlink()
-                print(f"✅ Deleted product image: {filename}")
-            except Exception as exc:
-                print(f"⚠️ Error deleting product image {filename}: {exc}")
+        filename = ""
+        image_value = product.image
+        if not image_value.startswith(("http://", "https://")):
+            filename = image_value.split("/")[-1]
+        else:
+            parsed = urlparse(image_value)
+            if parsed.scheme in ("http", "https") and parsed.netloc == request.host:
+                filename = parsed.path.rsplit("/", 1)[-1]
+
+        if filename:
+            image_path = Path(current_app.config["PRODUCTS_UPLOAD_DIR"]) / filename
+            if image_path.exists():
+                try:
+                    image_path.unlink()
+                    print(f"✅ Deleted product image: {filename}")
+                except Exception as exc:
+                    print(f"⚠️ Error deleting product image {filename}: {exc}")
 
     product_name = product.name
     db.session.delete(product)

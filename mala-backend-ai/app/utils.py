@@ -4,8 +4,10 @@ import mimetypes
 import os
 from pathlib import Path
 from typing import Iterable
+from urllib.parse import urlparse
 
-from flask import current_app, request, url_for
+from flask import current_app, has_request_context, request, url_for
+from werkzeug.utils import secure_filename
 
 
 def init_upload_dirs(app) -> None:
@@ -32,6 +34,128 @@ def abs_url_for(endpoint: str, **values) -> str:
     rel = url_for(endpoint, **values)
     host = request.host_url.rstrip("/")
     return f"{host}{rel}"
+
+
+def _strip_fragment_and_query(path: str) -> str:
+    without_query = path.split("?", 1)[0]
+    return without_query.split("#", 1)[0]
+
+
+def _normalize_local_filename(value: str) -> str:
+    cleaned = _strip_fragment_and_query(value.strip())
+    if not cleaned:
+        return ""
+    filename = cleaned.rsplit("/", 1)[-1]
+    return secure_filename(filename) if filename else ""
+
+
+def normalize_product_image(value: str | None, current_host: str | None = None) -> str:
+    """Normalize product image reference to a stored filename when it's a local upload."""
+    if not value:
+        return ""
+
+    raw = str(value).strip()
+    if not raw:
+        return ""
+
+    parsed = urlparse(raw)
+    if parsed.scheme in ("http", "https"):
+        # Keep remote resources (different host) as-is
+        if current_host and parsed.netloc and parsed.netloc != current_host:
+            return raw
+        path = parsed.path
+    else:
+        path = raw
+
+    path = _strip_fragment_and_query(path)
+    if not path:
+        return ""
+
+    # Map known prefixes to filename
+    prefixes = (
+        "/api/products/images/",
+        "/uploads/products/",
+        "products/",
+    )
+    for prefix in prefixes:
+        if path.startswith(prefix):
+            path = path[len(prefix) :]
+            break
+
+    return _normalize_local_filename(path)
+
+
+def normalize_qr_image(value: str | None, current_host: str | None = None) -> str:
+    """Normalize QR image reference to stored filename when uploaded locally."""
+    if not value:
+        return ""
+
+    raw = str(value).strip()
+    if not raw:
+        return ""
+
+    parsed = urlparse(raw)
+    if parsed.scheme in ("http", "https"):
+        if current_host and parsed.netloc and parsed.netloc != current_host:
+            return raw
+        path = parsed.path
+    else:
+        path = raw
+
+    path = _strip_fragment_and_query(path)
+    if not path:
+        return ""
+
+    prefixes = (
+        "/api/qr/images/",
+        "/uploads/qr_codes/",
+        "qr/",
+    )
+    for prefix in prefixes:
+        if path.startswith(prefix):
+            path = path[len(prefix) :]
+            break
+
+    return _normalize_local_filename(path)
+
+
+def build_product_image_info(image_value: str | None) -> dict[str, str]:
+    if not image_value:
+        return {"path": "", "relative": "", "absolute": ""}
+
+    if isinstance(image_value, str) and image_value.startswith(("http://", "https://")):
+        return {"path": image_value, "relative": image_value, "absolute": image_value}
+
+    filename = str(image_value)
+    relative = f"/api/products/images/{filename}"
+
+    absolute = relative
+    if has_request_context():
+        try:
+            absolute = abs_url_for("uploads.serve_product_image", filename=filename)
+        except RuntimeError:
+            absolute = relative
+
+    return {"path": filename, "relative": relative, "absolute": absolute}
+
+
+def build_qr_image_info(image_value: str | None) -> dict[str, str]:
+    if not image_value:
+        return {"path": "", "relative": "", "absolute": ""}
+
+    if isinstance(image_value, str) and image_value.startswith(("http://", "https://")):
+        return {"path": image_value, "relative": image_value, "absolute": image_value}
+
+    filename = str(image_value)
+    relative = f"/api/qr/images/{filename}"
+    absolute = relative
+    if has_request_context():
+        try:
+            absolute = abs_url_for("uploads.serve_qr_image", filename=filename)
+        except RuntimeError:
+            absolute = relative
+
+    return {"path": filename, "relative": relative, "absolute": absolute}
 
 
 def init_ai_model(app) -> None:
@@ -102,6 +226,7 @@ def serialize_user(user) -> dict:
 
 def serialize_product(product) -> dict:
     price = product.price or 0
+    image_info = build_product_image_info(product.image)
     return {
         "id": product.id,
         "name": product.name,
@@ -110,7 +235,9 @@ def serialize_product(product) -> dict:
         "stock": product.stock,
         "active": product.active,
         "color": product.color,
-        "image": product.image,
+        "image": image_info["absolute"],
+        "imagePath": image_info["path"],
+        "imageRelative": image_info["relative"],
     }
 
 
