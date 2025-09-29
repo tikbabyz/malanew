@@ -1,7 +1,7 @@
 // src/store/data.js
 import { create } from "zustand";
 import dayjs from "dayjs";
-import API from "../services/api.js";
+import API from "@services/api";
 
 const KEY = "mala_data_v1";
 
@@ -647,3 +647,4 @@ deleteAnnouncement: async (id) => {
       return { ...s };
     }),
 }));
+

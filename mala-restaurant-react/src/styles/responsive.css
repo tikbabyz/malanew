@@ -3,7 +3,7 @@
 =========================== */
 
 /* Import CSS Variables from components */
-@import url('./components/ResponsiveTable.module.css');
+@import url('../shared/components/ResponsiveTable/ResponsiveTable.module.css');
 
 /* Global Responsive Utilities */
 .responsiveContainer {

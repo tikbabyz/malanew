@@ -1,6 +1,6 @@
 // src/store/auth.js
 import { create } from 'zustand'
-import API from '../services/api'
+import API from '@services/api'
 
 const AUTH_KEY = 'mala_auth_user'
 
@@ -91,3 +91,4 @@ export const useAuthStore = create((set, get) => ({
     set({ user: null, isLoading: false })
   },
 }))
+
