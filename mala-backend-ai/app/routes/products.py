@@ -105,18 +105,57 @@ def delete_product(product_id: int):
 @products_bp.get("/color-prices")
 def get_color_prices():
     rows = ColorPrice.query.order_by(ColorPrice.color.asc()).all()
-    return jsonify({row.color: float(row.price) for row in rows})
+    return jsonify({
+        row.color: {
+            "price": float(row.price),
+            "stock": int(row.stock or 0)
+        }
+        for row in rows
+    })
 
 
 @products_bp.put("/color-prices")
 def update_color_prices():
     data = request.get_json(force=True) or {}
-    for color, price in data.items():
+    updated = {}
+    for color, payload in data.items():
+        price = None
+        stock = None
+
+        if isinstance(payload, dict):
+            price = payload.get("price")
+            stock = payload.get("stock")
+        else:
+            price = payload
+
+        try:
+            price = float(price) if price is not None else None
+        except (TypeError, ValueError):
+            price = None
+
+        try:
+            stock = int(stock) if stock is not None else None
+        except (TypeError, ValueError):
+            stock = None
+
         row = ColorPrice.query.get(color)
         if not row:
-            row = ColorPrice(color=color, price=price)
+            row = ColorPrice(
+                color=color,
+                price=price or 0,
+                stock=stock if stock is not None else 0,
+            )
             db.session.add(row)
         else:
-            row.price = price
+            if price is not None:
+                row.price = price
+            if stock is not None:
+                row.stock = stock
+
+        updated[color] = {
+            "price": float(row.price),
+            "stock": int(row.stock or 0)
+        }
+
     db.session.commit()
-    return jsonify({"ok": True})
+    return jsonify(updated)

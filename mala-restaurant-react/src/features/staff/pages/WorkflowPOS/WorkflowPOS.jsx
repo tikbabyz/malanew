@@ -459,7 +459,8 @@ export default function WorkflowPOS() {
       
       if (!n) continue;
       
-      const price = Number(colorPrices?.[c]);
+      const colorEntry = colorPrices?.[c] || colorPrices?.[String(c).toLowerCase()];
+      const price = Number(colorEntry?.price ?? 0);
       if (Number.isNaN(price) || price <= 0) { 
         missing.push(c); 
         continue; 
@@ -1136,11 +1137,13 @@ export default function WorkflowPOS() {
                         {Object.entries(result.counts || {}).map(([k, v]) => {
                           const c = norm(k);
                           const label = COLOR_LABEL[c] || c;
-                          const price = colorPrices?.[c];
+                          const colorEntry = colorPrices?.[c] || colorPrices?.[String(c).toLowerCase()];
+                          const price = colorEntry?.price;
                           return (
                             <div key={k} className={styles.countItem}>
                               <span className={styles.colorLabel}>{label}</span>
                               <span className={styles.priceLabel}>{price ?? "—"}฿</span>
+                              <span className={styles.stockLabelSmall}>สต็อก: {colorEntry?.stock ?? '—'}</span>
                               <span className={styles.multiplyLabel}>x</span>
                               <input
                                 type="number"

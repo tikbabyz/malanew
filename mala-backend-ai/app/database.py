@@ -58,7 +58,7 @@ def seed_initial_data():
         colors = {"red": 5, "green": 9, "blue": 12, "pink": 18, "purple": 22}
         for color, price in colors.items():
             if not ColorPrice.query.filter_by(color=color).first():
-                cp = ColorPrice(color=color, price=price)
+                cp = ColorPrice(color=color, price=price, stock=0)
                 db.session.add(cp)
         
         # Seed sample announcements

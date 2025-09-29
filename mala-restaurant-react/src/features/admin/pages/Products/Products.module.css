@@ -49,6 +49,98 @@
   flex-shrink: 0;
 }
 
+.colorSummarySection {
+  background: white;
+  border-radius: 18px;
+  border: 2px solid #f1f5f9;
+  padding: 1.5rem 1.75rem;
+  margin: 1.5rem;
+  margin-top: 0.75rem;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+}
+
+.colorSummaryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.colorSummaryTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.linkButton:hover {
+  text-decoration: underline;
+}
+
+.colorSummaryList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.colorSummaryItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  background: linear-gradient(135deg, #f8fafc, #eef2ff);
+  border-radius: 14px;
+  border: 1px solid #e0e7ff;
+  min-width: 200px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.colorSummaryDot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+}
+
+.colorSummaryInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.colorSummaryName {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+.colorSummaryMeta {
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.colorSummaryEmpty {
+  padding: 1rem;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #64748b;
+  width: 100%;
+  text-align: center;
+}
+
 .primaryButton {
   background: white;
   color: #dc2626;
@@ -255,6 +347,14 @@
 .stockButton:hover {
   background: #059669;
   transform: scale(1.1);
+}
+
+.stockButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  color: #f8fafc;
 }
 
 /* Priority button for out of stock items */
@@ -1214,6 +1314,8 @@
   border: 2px solid #f1f5f9;
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04);
+  gap: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .colorItem:hover {
@@ -1238,11 +1340,146 @@
   flex-shrink: 0;
 }
 
+.colorTextGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .colorName {
   font-weight: 600;
   color: #374151;
   font-size: 1rem;
   text-transform: capitalize;
+}
+
+.colorMeta {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.colorControls {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.colorControlGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stockInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stockInput {
+  width: 90px;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: right;
+  transition: all 0.3s ease;
+}
+
+.stockInput:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+.stockUnit {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.removeColorButton {
+  align-self: center;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.removeColorButton:hover {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
+.newColorSection {
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed #e5e7eb;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.newColorTitle {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.addColorRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr)) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.addColorInput {
+  padding: 0.65rem 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.addColorInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.addColorButton {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border: none;
+  color: white;
+  padding: 0.6rem 1.1rem;
+  border-radius: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.addColorButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.addColorButton:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(22, 163, 74, 0.25);
 }
 
 .priceInput {
@@ -1397,7 +1634,19 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 0.5rem;
   }
-  
+
+  .colorSummarySection {
+    margin: 1rem;
+  }
+
+  .colorSummaryList {
+    flex-direction: column;
+  }
+
+  .colorSummaryItem {
+    width: 100%;
+  }
+
   .colorOption {
     height: 36px;
   }
@@ -1449,6 +1698,20 @@
   
   .colorItem {
     padding: 1rem;
+  }
+  
+  .colorControls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .addColorRow {
+    grid-template-columns: 1fr;
+  }
+
+  .removeColorButton {
+    width: 100%;
+    justify-content: center;
   }
   
   .priceInput {

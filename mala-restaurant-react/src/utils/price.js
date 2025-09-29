@@ -5,7 +5,9 @@ export function baseUnitPrice(p, colorPrices) {
   const isMeatball = String(p?.category || '').toLowerCase() === 'meatball';
   if (isMeatball) {
     const key = String(p?.color || 'red').toLowerCase();
-    return Number((colorPrices || {})[key] || 0);
+    const entry = (colorPrices || {})[key];
+    const price = typeof entry === 'object' && entry !== null ? entry.price : entry;
+    return Number(price || 0);
   }
   return Number(p?.price || 0);
 }

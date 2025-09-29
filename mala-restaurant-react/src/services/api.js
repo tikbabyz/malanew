@@ -220,8 +220,32 @@ export const API = {
   },
 
   colorPrices: {
-    get: () => http('/color-prices'),
-    set: (map) => http('/color-prices', { method: 'PUT', body: JSON.stringify(map) }),
+    async get() {
+      const data = await http('/color-prices');
+      const normalized = {};
+      Object.entries(data || {}).forEach(([color, payload]) => {
+        const price = typeof payload === 'object' && payload !== null ? payload.price : payload;
+        const stock = typeof payload === 'object' && payload !== null ? payload.stock : 0;
+        const key = String(color || '').toLowerCase();
+        normalized[key] = {
+          price: Number(price ?? 0) || 0,
+          stock: Number(stock ?? 0) || 0,
+        };
+      });
+      return normalized;
+    },
+    async set(map) {
+      const payload = {};
+      Object.entries(map || {}).forEach(([color, value]) => {
+        const key = String(color || '').toLowerCase();
+        const entry = typeof value === 'object' && value !== null ? value : { price: value, stock: undefined };
+        payload[key] = {
+          price: Number(entry.price ?? 0) || 0,
+          stock: entry.stock == null ? 0 : Number(entry.stock) || 0,
+        };
+      });
+      return http('/color-prices', { method: 'PUT', body: JSON.stringify(payload) });
+    },
   },
 
   orders: {

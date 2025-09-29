@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS products (
 -- ===== TABLE: color_prices =====
 CREATE TABLE IF NOT EXISTS color_prices (
   color VARCHAR(50) PRIMARY KEY,
-  price DECIMAL(12,2) NOT NULL
+  price DECIMAL(12,2) NOT NULL,
+  stock INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ===== TABLE: orders =====

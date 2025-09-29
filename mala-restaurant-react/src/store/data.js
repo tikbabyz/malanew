@@ -242,10 +242,22 @@ export const useDataStore = create((set, get) => ({
     }
   },
 
-  setColorPrice: (color, price) =>
+  setColorPrice: (color, values) =>
     set((s) => {
-      const c = String(color || "").toLowerCase();
-      s.colorPrices = { ...(s.colorPrices || {}), [c]: Number(price || 0) };
+      const key = String(color || "").toLowerCase();
+      const prev = (s.colorPrices || {})[key] || { price: 0, stock: 0 };
+      const nextEntry = {
+        price: Number(
+          typeof values === 'object' && values !== null ? values.price ?? prev.price : values ?? prev.price
+        ) || 0,
+        stock: Number(
+          typeof values === 'object' && values !== null && values.stock != null ? values.stock : prev.stock
+        ) || 0,
+      };
+      s.colorPrices = {
+        ...(s.colorPrices || {}),
+        [key]: nextEntry,
+      };
       save(s);
       return { ...s };
     }),
@@ -254,11 +266,16 @@ export const useDataStore = create((set, get) => ({
     try {
       console.log('📡 Updating color prices in database:', Object.keys(map || {}).length);
       await API.colorPrices.set(map);
-      
+
       set((s) => {
         const next = { ...(s.colorPrices || {}) };
         Object.entries(map || {}).forEach(([k, v]) => {
-          next[String(k).toLowerCase()] = Number(v || 0);
+          const key = String(k || '').toLowerCase();
+          const entry = typeof v === 'object' && v !== null ? v : { price: v, stock: (s.colorPrices?.[key]?.stock ?? 0) };
+          next[key] = {
+            price: Number(entry.price ?? 0) || 0,
+            stock: Number(entry.stock ?? 0) || 0,
+          };
         });
         s.colorPrices = next;
         console.log('✅ Color prices updated in database:', Object.keys(next).length);

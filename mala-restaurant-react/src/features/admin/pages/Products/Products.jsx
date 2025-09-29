@@ -18,6 +18,7 @@ import {
   FaSearch,
   FaFilter,
   FaPlusCircle,
+  FaPalette,
 } from 'react-icons/fa';
 
 const ColorDot = ({ color }) => (
@@ -30,10 +31,22 @@ const ColorDot = ({ color }) => (
 const FieldError = ({ children }) =>
   children ? <p className={styles.errorText}>{children}</p> : null;
 
-const FALLBACK_COLORS = ['red', 'green', 'blue', 'pink', 'purple'];
 const COLOR_PRICE_CATS = new Set(['meat', 'veg', 'seafood', 'meatball']);
 
 const isColorPriced = (cat) => COLOR_PRICE_CATS.has(String(cat || '').toLowerCase());
+
+const normalizeColorMap = (source) => {
+  const entries = Object.entries(source || {});
+  return entries.reduce((acc, [color, value]) => {
+    const key = String(color || '').toLowerCase();
+    const entry = typeof value === 'object' && value !== null ? value : { price: value, stock: 0 };
+    acc[key] = {
+      price: Number(entry?.price ?? 0) || 0,
+      stock: Number(entry?.stock ?? 0) || 0,
+    };
+    return acc;
+  }, {});
+};
 
 // ColorPicker component
 function ColorPicker({ value, onChange, colors = [], colorPrices = {} }) {
@@ -49,7 +62,7 @@ function ColorPicker({ value, onChange, colors = [], colorPrices = {} }) {
         >
           <span className={styles.colorDot} style={{ background: c }} />
           <span className={styles.colorName}>{c}</span>
-          <span className={styles.colorPrice}>{(colorPrices?.[c] ?? 0)}฿</span>
+          <span className={styles.colorPrice}>{(colorPrices?.[c]?.price ?? colorPrices?.[String(c).toLowerCase()]?.price ?? 0)}฿</span>
         </button>
       ))}
     </div>
@@ -88,20 +101,37 @@ export default function Products() {
     category: '',
     image: '',
     color: '', // ไม่ตั้งค่าเริ่มต้น ให้ผู้ใช้เลือกเอง
-    stock: 0
+    stock: '0'
   });
 
   const categoriesList = ['meat', 'seafood', 'vegetable', 'drink'];
 
   // ดึงสีจากฐานข้อมูล colorPrices แทนการ hardcode และเรียงจากราคามากไปน้อย
   const colorOptions = useMemo(() => {
-    const colors = Object.keys(colorPrices || {});
-    if (colors.length > 0) {
-      // เรียงสีตามราคาจากมากไปน้อย
-      return colors.sort((a, b) => (colorPrices[b] || 0) - (colorPrices[a] || 0));
-    }
-    return ['red', 'green', 'blue', 'pink', 'purple']; // fallback
+    const entries = Object.entries(colorPrices || {});
+    return entries
+      .sort((a, b) => Number(b[1]?.price ?? 0) - Number(a[1]?.price ?? 0))
+      .map(([color]) => color);
   }, [colorPrices]);
+
+  const colorSummaryEntries = useMemo(() => {
+    if (!colorPrices || !Object.keys(colorPrices).length) return [];
+    return colorOptions
+      .map((color) => {
+        const entry = colorPrices?.[color] ?? colorPrices?.[String(color).toLowerCase()];
+        return entry ? [color, entry] : null;
+      })
+      .filter(Boolean);
+  }, [colorOptions, colorPrices]);
+
+  const getColorData = useCallback(
+    (color) => {
+      if (!color) return null;
+      const key = String(color || '').toLowerCase();
+      return colorPrices?.[key] ?? null;
+    },
+    [colorPrices]
+  );
 
   // ตรวจสอบว่าสินค้าเป็นประเภทที่ใช้ราคาตามสี
   const isColorPricedCategory = (category) => {
@@ -110,7 +140,7 @@ export default function Products() {
 
   // ตรวจสอบว่าควรใช้ราคาจากสีหรือไม่
   const shouldUseColorPrice = () => {
-    return isColorPricedCategory(formData.category) && formData.color;
+    return isColorPricedCategory(formData.category) && !!getColorData(formData.color);
   };
 
   // ฟังก์ชันจัดการการเปลี่ยนสี
@@ -120,7 +150,8 @@ export default function Products() {
       setFormData(prev => ({ 
         ...prev, 
         color: '', 
-        price: '' // เคลียร์ราคาเพื่อให้กรอกเองได้
+        price: '',
+        stock: prev.stock || ''
       }));
       return;
     }
@@ -128,9 +159,11 @@ export default function Products() {
     const newFormData = { ...formData, color };
     
     // เติมราคาจาก colorPrices ทันทีโดยไม่ต้องตรวจสอบ category
-    if (colorPrices[color] !== undefined) {
-      newFormData.price = colorPrices[color].toString();
+    const colorData = getColorData(color);
+    if (colorData) {
+      newFormData.price = (colorData.price ?? 0).toString();
     }
+    newFormData.stock = '0';
     
     setFormData(newFormData);
   };
@@ -140,8 +173,11 @@ export default function Products() {
     const newFormData = { ...formData, category };
     
     // ถ้าเป็นหมวดหมู่ที่ใช้ราคาตามสี และมีสีเลือกไว้แล้ว ให้ตั้งราคาจาก colorPrices
-    if (isColorPricedCategory(category) && formData.color && colorPrices[formData.color] !== undefined) {
-      newFormData.price = colorPrices[formData.color].toString();
+    if (isColorPricedCategory(category) && formData.color) {
+      const colorData = getColorData(formData.color);
+      if (colorData) {
+        newFormData.price = (colorData.price ?? 0).toString();
+      }
     } else if (!isColorPricedCategory(category)) {
       // ถ้าไม่ใช่หมวดหมู่ที่ใช้ราคาตามสี ให้เคลียร์ราคา
       newFormData.price = '';
@@ -153,13 +189,14 @@ export default function Products() {
   // useEffect เพื่อเติมราคาอัตโนมัติเมื่อมีการเปลี่ยนแปลง color หรือ colorPrices
   useEffect(() => {
     // เติมราคาเมื่อมีสีและมีราคาในฐานข้อมูล โดยไม่ต้องตรวจสอบ category
-    if (formData.color && colorPrices[formData.color] !== undefined) {
+    const colorData = getColorData(formData.color);
+    if (formData.color && colorData) {
       setFormData(prev => ({
         ...prev,
-        price: colorPrices[formData.color].toString()
+        price: (colorData.price ?? 0).toString()
       }));
     }
-  }, [formData.color, colorPrices]);
+  }, [formData.color, getColorData]);
 
   // Filter products based on search and category
   const filteredProducts = products.filter(product => {
@@ -215,19 +252,22 @@ export default function Products() {
 
   // Color price modal
   const [showColorPriceModal, setShowColorPriceModal] = useState(false);
-  const [draftColorPrices, setDraftColorPrices] = useState(colorPrices || {});
-
-  const COLORS = useMemo(
-    () => (Object.keys(colorPrices || {}).length ? Object.keys(colorPrices) : FALLBACK_COLORS),
-    [colorPrices]
-  );
+  const [draftColorPrices, setDraftColorPrices] = useState(() => normalizeColorMap(colorPrices));
+  const [newColorName, setNewColorName] = useState('');
+  const [newColorPrice, setNewColorPrice] = useState('0');
+  const [newColorStock, setNewColorStock] = useState('0');
 
   const openColorPriceModal = () => setShowColorPriceModal(true);
   const closeColorPriceModal = () => setShowColorPriceModal(false);
 
   // Sync draft when opening modal
   useEffect(() => {
-    if (showColorPriceModal) setDraftColorPrices(colorPrices || {});
+    if (showColorPriceModal) {
+      setDraftColorPrices(normalizeColorMap(colorPrices));
+      setNewColorName('');
+      setNewColorPrice('0');
+      setNewColorStock('0');
+    }
   }, [showColorPriceModal, colorPrices]);
 
   // Apply color prices to all color-priced products
@@ -236,7 +276,9 @@ export default function Products() {
       const priceMap = prices || colorPrices || {};
       (products || []).forEach((p) => {
         if (isColorPriced(p.category)) {
-          const newPrice = Number(priceMap[(p.color || 'red').toLowerCase()] || 0);
+          const colorKey = String(p.color || '').toLowerCase();
+          const entry = priceMap[colorKey] || priceMap[p.color];
+          const newPrice = Number(entry?.price ?? 0);
           if (p.price !== newPrice) {
             API.products.update(p.id, { ...p, price: newPrice })
               .then((saved) => updateProduct(saved))
@@ -250,31 +292,97 @@ export default function Products() {
     [products, colorPrices, updateProduct]
   );
 
-  const hasInvalidPriceInModal = useMemo(
-    () => (COLORS || []).some((c) => Number.isNaN(Number(draftColorPrices[c])) || Number(draftColorPrices[c]) < 0),
-    [COLORS, draftColorPrices]
-  );
+  const draftColorKeys = useMemo(() => Object.keys(draftColorPrices || {}), [draftColorPrices]);
+
+  const hasInvalidPriceInModal = useMemo(() => {
+    return draftColorKeys.some((c) => {
+      const entry = draftColorPrices?.[c] || {};
+      const priceNum = Number(entry.price);
+      const stockNum = Number(entry.stock);
+      return (
+        Number.isNaN(priceNum) ||
+        priceNum < 0 ||
+        Number.isNaN(stockNum) ||
+        stockNum < 0 ||
+        !Number.isInteger(stockNum)
+      );
+    });
+  }, [draftColorKeys, draftColorPrices]);
 
   const clampBaht = (v) => Math.max(0, Math.round(Number(v) || 0));
+  const clampStock = (v) => Math.max(0, Math.round(Number(v) || 0));
   
   const nudgeDraftTHB = (delta) => {
     setDraftColorPrices((prev) => {
       const out = { ...(prev || {}) };
-      (COLORS || []).forEach((c) => {
-        out[c] = clampBaht((prev?.[c] ?? 0) + delta);
+      Object.entries(out).forEach(([color, entry]) => {
+        const next = { ...(entry || { price: 0, stock: 0 }) };
+        next.price = clampBaht((Number(next.price) || 0) + delta);
+        out[color] = next;
+      });
+      return out;
+    });
+  };
+  
+  const nudgeDraftPercent = (pct) => {
+    setDraftColorPrices((prev) => {
+      const out = { ...(prev || {}) };
+      Object.entries(out).forEach(([color, entry]) => {
+        const next = { ...(entry || { price: 0, stock: 0 }) };
+        next.price = clampBaht((Number(next.price) || 0) * (1 + pct / 100));
+        out[color] = next;
       });
       return out;
     });
   };
 
-  const nudgeDraftPercent = (pct) => {
+  const handleDraftPriceChange = (color, value) => {
+    const key = String(color || '').toLowerCase();
+    setDraftColorPrices((prev) => ({
+      ...(prev || {}),
+      [key]: {
+        ...(prev?.[key] || { price: '', stock: '0' }),
+        price: value,
+      },
+    }));
+  };
+
+  const handleDraftStockChange = (color, value) => {
+    const key = String(color || '').toLowerCase();
+    setDraftColorPrices((prev) => ({
+      ...(prev || {}),
+      [key]: {
+        ...(prev?.[key] || { price: '', stock: '0' }),
+        stock: value,
+      },
+    }));
+  };
+
+  const handleRemoveDraftColor = (color) => {
+    const key = String(color || '').toLowerCase();
     setDraftColorPrices((prev) => {
-      const out = { ...(prev || {}) };
-      (COLORS || []).forEach((c) => {
-        out[c] = clampBaht((prev?.[c] ?? 0) * (1 + pct / 100));
-      });
-      return out;
+      const next = { ...(prev || {}) };
+      delete next[key];
+      if (Object.keys(next).length === 0) {
+        return normalizeColorMap({});
+      }
+      return next;
     });
+  };
+
+  const handleAddDraftColor = () => {
+    const name = newColorName.trim().toLowerCase();
+    if (!name) return;
+    setDraftColorPrices((prev) => ({
+      ...(prev || {}),
+      [name]: {
+        price: newColorPrice,
+        stock: newColorStock,
+      },
+    }));
+    setNewColorName('');
+    setNewColorPrice('0');
+    setNewColorStock('0');
   };
 
   const saveColorPrices = async () => {
@@ -282,16 +390,19 @@ export default function Products() {
     try {
       // Save to database via API
       const cleanPrices = Object.fromEntries(
-        Object.entries(draftColorPrices).map(([k, v]) => [k, Number(v) || 0])
+        Object.entries(draftColorPrices || {}).map(([color, entry]) => [
+          color,
+          {
+            price: clampBaht(entry?.price ?? 0),
+            stock: clampStock(entry?.stock ?? 0),
+          },
+        ])
       );
-      
-      await API.colorPrices.set(cleanPrices);
-      
-      // Update local state
-      setColorPrices(draftColorPrices);
-      
+
+      await setColorPrices(cleanPrices);
+
       // Apply color prices to products
-      applyColorPricesToAllColorPricedProducts(draftColorPrices);
+      applyColorPricesToAllColorPricedProducts(cleanPrices);
       
       closeColorPriceModal();
     } catch (error) {
@@ -303,7 +414,7 @@ export default function Products() {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingProduct(null);
-    setFormData({ name: '', price: '', category: '', image: '', color: '', stock: 0 });
+    setFormData({ name: '', price: '', category: '', image: '', color: '', stock: '0' });
     setErrors({});
   };
 
@@ -315,7 +426,7 @@ export default function Products() {
       category: product.category || '',
       image: product.imagePath || product.image || '',
       color: product.color || '',
-      stock: product.stock || 0
+      stock: String(product.stock ?? 0)
     });
     setShowForm(true);
   };
@@ -377,18 +488,21 @@ export default function Products() {
     if (!formData.name.trim()) newErrors.name = 'กรุณาใส่ชื่อสินค้า';
     
     // ตรวจสอบราคา - ถ้าเป็นประเภทที่ใช้ราคาตามสี ให้ใช้ราคาจาก colorPrices
-    let finalPrice = formData.price;
+    let finalPrice = 0;
     if (shouldUseColorPrice()) {
-      finalPrice = colorPrices[formData.color];
+      const colorEntry = getColorData(formData.color);
+      finalPrice = Number(colorEntry?.price ?? 0);
       if (!finalPrice || finalPrice <= 0) {
         newErrors.price = `กรุณาตั้งราคาสำหรับสี ${formData.color} ในการตั้งค่าราคาสีก่อน`;
       }
     } else {
-      if (!formData.price || formData.price <= 0) newErrors.price = 'กรุณาใส่ราคาที่ถูกต้อง';
+      finalPrice = Number(formData.price || 0);
+      if (!finalPrice || finalPrice <= 0) newErrors.price = 'กรุณาใส่ราคาที่ถูกต้อง';
     }
-    
+
     if (!formData.category) newErrors.category = 'กรุณาเลือกหมวดหมู่';
-    if (formData.stock < 0) newErrors.stock = 'จำนวนสต็อกต้องไม่ติดลบ';
+    const stockValue = Number(formData.stock || 0);
+    if (!shouldUseColorPrice() && stockValue < 0) newErrors.stock = 'จำนวนสต็อกต้องไม่ติดลบ';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -398,11 +512,11 @@ export default function Products() {
     try {
       const productData = {
         name: formData.name.trim(),
-        price: parseFloat(finalPrice),
+        price: Number(finalPrice) || 0,
         category: formData.category,
         image: formData.image,
         color: formData.color,
-        stock: parseInt(formData.stock) || 0,
+        stock: shouldUseColorPrice() ? 0 : Math.max(0, parseInt(formData.stock, 10) || 0),
         active: true
       };
 
@@ -467,6 +581,8 @@ export default function Products() {
   const colorPricedProducts = products.filter((p) => isColorPriced(p.category));
   const otherProducts = products.filter((p) => !isColorPriced(p.category));
 
+  const selectedColorData = getColorData(formData.color);
+
   const uniqueProducts = products.filter(
     (product, index, self) =>
       index === self.findIndex((p) => p.id === product.id)
@@ -496,13 +612,48 @@ export default function Products() {
                   <FaPlus />
                   เพิ่มสินค้าใหม่
                 </button>
-               
+                <button
+                  className={styles.secondaryButton}
+                  onClick={openColorPriceModal}
+                  type="button"
+                >
+                  <FaPalette />
+                  จัดการสีไม้
+                </button>
               </div>
-            </div>
           </div>
+        </div>
 
-          {/* Search and Filter Section */}
-          <div className={styles.filtersSection}>
+        <div className={styles.colorSummarySection}>
+          <div className={styles.colorSummaryHeader}>
+            <span className={styles.colorSummaryTitle}>สีไม้ในคลัง</span>
+            <button type="button" className={styles.linkButton} onClick={openColorPriceModal}>
+              จัดการสีไม้ทั้งหมด
+            </button>
+          </div>
+          <div className={styles.colorSummaryList}>
+            {colorSummaryEntries.length ? (
+              colorSummaryEntries.map(([color, entry]) => (
+                <div key={color} className={styles.colorSummaryItem}>
+                  <span className={styles.colorSummaryDot} style={{ backgroundColor: color }} />
+                  <div className={styles.colorSummaryInfo}>
+                    <span className={styles.colorSummaryName}>{color.toUpperCase()}</span>
+                    <span className={styles.colorSummaryMeta}>
+                      ราคา {Number(entry?.price ?? 0)} ฿ • สต็อก {Number(entry?.stock ?? 0)} ไม้
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className={styles.colorSummaryEmpty}>
+                <p>ยังไม่มีข้อมูลสีไม้ กรุณาเพิ่มผ่านปุ่ม “จัดการสีไม้”</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Search and Filter Section */}
+        <div className={styles.filtersSection}>
             <div className={styles.filtersContainer}>
               <div className={styles.searchBox}>
                 <FaSearch className={styles.searchIcon} />
@@ -572,7 +723,8 @@ export default function Products() {
                         <button
                           className={`${styles.stockButton} ${(product.stock || 0) === 0 ? styles.priorityButton : ''}`}
                           onClick={() => handleStockClick(product)}
-                          title={`เติม Stock${(product.stock || 0) === 0 ? ' (หมดสต็อก)' : ''}`}
+                          title={product.color ? 'จัดการสต็อกผ่านสีไม้' : `เติม Stock${(product.stock || 0) === 0 ? ' (หมดสต็อก)' : ''}`}
+                          disabled={!!product.color}
                         >
                           <FaPlusCircle />
                         </button>
@@ -677,15 +829,21 @@ export default function Products() {
                             type="number"
                             min="0"
                             step="1"
-                            value={formData.stock}
+                            value={formData.color ? '0' : formData.stock}
                             onChange={(e) => setFormData(prev => ({ ...prev, stock: e.target.value }))
                             }
                             className={`${styles.formInput} ${errors.stock ? styles.inputError : ''}`}
                             placeholder="0"
+                            disabled={!!formData.color}
                           />
                           <span className={styles.priceUnit}>ชิ้น</span>
                         </div>
                         <FieldError>{errors.stock}</FieldError>
+                        {formData.color && (
+                          <small className={styles.priceHint}>
+                            💡 สินค้าที่เลือกสีไม้จะใช้สต็อกจากสีโดยอัตโนมัติ ไม่ต้องกำหนดสต็อกที่ตัวสินค้า
+                          </small>
+                        )}
                       </div>
                     </div>
 
@@ -695,17 +853,17 @@ export default function Products() {
                           <FaMoneyBillWave className={styles.labelIcon} />
                           ราคา (บาท) *
                         </label>
-                        {formData.color && colorPrices[formData.color] ? (
+                        {formData.color && selectedColorData ? (
                           <div className={styles.priceDisplay}>
                             <div className={styles.autoPriceInfo}>
                               <span className={styles.autoPriceLabel}>ราคาจากสี {formData.color}:</span>
                               <span className={styles.autoPriceValue}>
-                                {colorPrices[formData.color] || 0} ฿
+                                {selectedColorData.price ?? 0} ฿
                               </span>
                             </div>
                             <input
                               type="hidden"
-                              value={colorPrices[formData.color] || 0}
+                              value={selectedColorData.price ?? 0}
                             />
                           </div>
                         ) : (
@@ -724,9 +882,9 @@ export default function Products() {
                           </div>
                         )}
                         <FieldError>{errors.price}</FieldError>
-                        {formData.color && colorPrices[formData.color] && (
+                        {formData.color && selectedColorData && (
                           <small className={styles.priceHint}>
-                            💡 ราคาถูกกำหนดอัตโนมัติจากสี {formData.color} (กดสีอีกครั้งเพื่อยกเลิก)
+                            💡 ราคาถูกกำหนดอัตโนมัติจากสี {formData.color} (กดสีอีกครั้งเพื่อยกเลิก) — สต็อกสีนี้ {selectedColorData.stock ?? 0} ไม้
                           </small>
                         )}
                         {!formData.color && (
@@ -742,23 +900,26 @@ export default function Products() {
                           สีไม้
                         </label>
                         <div className={styles.colorGrid}>
-                          {colorOptions.map(color => (
-                            <button
-                              key={color}
-                              type="button"
-                              className={`${styles.colorOption} ${formData.color === color ? styles.colorOptionActive : ''}`}
-                              onClick={() => handleColorChange(color)}
-                              style={{ backgroundColor: color }}
-                              title={`${color} ${colorPrices[color] ? `(${colorPrices[color]} ฿)` : ''}`}
-                            >
-                              {formData.color === color && (
-                                <span className={styles.colorCheck}>✓</span>
-                              )}
-                              {colorPrices[color] && (
-                                <span className={styles.colorPrice}>{colorPrices[color]}฿</span>
-                              )}
-                            </button>
-                          ))}
+                          {colorOptions.map((color) => {
+                            const colorData = getColorData(color);
+                            return (
+                              <button
+                                key={color}
+                                type="button"
+                                className={`${styles.colorOption} ${formData.color === color ? styles.colorOptionActive : ''}`}
+                                onClick={() => handleColorChange(color)}
+                                style={{ backgroundColor: color }}
+                                title={colorData ? `${color} (${colorData.price ?? 0} ฿ · สต็อก ${colorData.stock ?? 0})` : color}
+                              >
+                                {formData.color === color && (
+                                  <span className={styles.colorCheck}>✓</span>
+                                )}
+                                {colorData && (
+                                  <span className={styles.colorPrice}>{colorData.price ?? 0}฿</span>
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
                         <small className={styles.colorHint}>
                           💡 เลือกสีเพื่อใช้ราคาอัตโนมัติ กดสีซ้ำเพื่อยกเลิก
@@ -947,32 +1108,110 @@ export default function Products() {
 
                 <div className={styles.colorPricingBody}>
                   <div className={styles.colorList}>
-                    {(COLORS || []).map((c) => (
-                      <div key={c} className={styles.colorItem}>
-                        <div className={styles.colorInfo}>
-                          <div className={styles.colorItemDot} style={{ backgroundColor: c }} />
-                          <span className={styles.colorName}>{c.toUpperCase()}</span>
+                    {draftColorKeys.length ? draftColorKeys.map((color) => {
+                      const entry = draftColorPrices?.[color] || { price: '', stock: '' };
+                      return (
+                        <div key={color} className={styles.colorItem}>
+                          <div className={styles.colorInfo}>
+                            <div className={styles.colorItemDot} style={{ backgroundColor: color }} />
+                            <div className={styles.colorTextGroup}>
+                              <span className={styles.colorName}>{color.toUpperCase()}</span>
+                              <span className={styles.colorMeta}>ราคา {entry.price ?? 0} ฿ • สต็อก {entry.stock ?? 0} ไม้</span>
+                            </div>
+                          </div>
+                          <div className={styles.colorControls}>
+                            <div className={styles.colorControlGroup}>
+                              <label>สต็อก</label>
+                              <div className={styles.stockInputGroup}>
+                                <input
+                                  className={styles.stockInput}
+                                  type="number"
+                                  min={0}
+                                  step={1}
+                                  value={entry.stock ?? 0}
+                                  onChange={(e) => handleDraftStockChange(color, e.target.value)}
+                                />
+                                <span className={styles.stockUnit}>ไม้</span>
+                              </div>
+                            </div>
+                            <div className={styles.colorControlGroup}>
+                              <label>ราคา</label>
+                              <div className={styles.priceInputGroup}>
+                                <input
+                                  className={styles.priceInput}
+                                  type="number"
+                                  min={0}
+                                  value={entry.price ?? 0}
+                                  onChange={(e) => handleDraftPriceChange(color, e.target.value)}
+                                />
+                                <span className={styles.priceUnit}>฿</span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              className={styles.removeColorButton}
+                              onClick={() => handleRemoveDraftColor(color)}
+                              title="ลบสีนี้"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
                         </div>
-                        <div className={styles.priceInputGroup}>
-                          <input
-                            className={styles.priceInput}
-                            type="number"
-                            min={0}
-                            value={draftColorPrices?.[c] ?? 0}
-                            onChange={(e) => setDraftColorPrices((d) => ({ ...d, [c]: e.target.value }))
-                            }
-                            placeholder="0"
-                          />
-                          <span className={styles.priceUnit}>฿</span>
-                        </div>
+                      );
+                    }) : (
+                      <div className={styles.colorSummaryEmpty}>
+                        <p>ยังไม่มีข้อมูลสีไม้ กรุณาเพิ่มจากฟอร์มด้านล่าง</p>
                       </div>
-                    ))}
+                    )}
+                  </div>
+
+                  <div className={styles.newColorSection}>
+                    <h4 className={styles.newColorTitle}>เพิ่มสีใหม่</h4>
+                    <div className={styles.addColorRow}>
+                      <input
+                        type="text"
+                        className={styles.addColorInput}
+                        placeholder="ชื่อสี (เช่น red)"
+                        value={newColorName}
+                        onChange={(e) => setNewColorName(e.target.value)}
+                      />
+                      <div className={styles.stockInputGroup}>
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          className={styles.stockInput}
+                          value={newColorStock}
+                          onChange={(e) => setNewColorStock(e.target.value)}
+                        />
+                        <span className={styles.stockUnit}>ไม้</span>
+                      </div>
+                      <div className={styles.priceInputGroup}>
+                        <input
+                          type="number"
+                          min={0}
+                          className={styles.priceInput}
+                          value={newColorPrice}
+                          onChange={(e) => setNewColorPrice(e.target.value)}
+                        />
+                        <span className={styles.priceUnit}>฿</span>
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.addColorButton}
+                        onClick={handleAddDraftColor}
+                        disabled={!newColorName.trim()}
+                      >
+                        <FaPlus />
+                        เพิ่ม
+                      </button>
+                    </div>
                   </div>
 
                   {hasInvalidPriceInModal && (
                     <div className={styles.errorBanner}>
                       <FaTimes className={styles.errorIcon} />
-                      กรุณากรอกราคาเป็นตัวเลขที่ไม่ติดลบ
+                      กรุณากรอกราคาและสต็อกเป็นตัวเลขที่ไม่ติดลบ (สต็อกต้องเป็นจำนวนเต็ม)
                     </div>
                   )}
 

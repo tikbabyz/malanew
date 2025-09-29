@@ -45,6 +45,7 @@ class ColorPrice(db.Model):
 
     color = db.Column(VARCHAR(50), primary_key=True)
     price = db.Column(DECIMAL(12, 2), nullable=False)
+    stock = db.Column(db.Integer, nullable=False, default=0)
 
 
 class Order(db.Model):
