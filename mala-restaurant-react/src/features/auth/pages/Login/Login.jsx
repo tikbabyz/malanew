@@ -1,5 +1,5 @@
 // src/pages/Login.jsx
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useReducer } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   FaUser,
@@ -16,154 +16,277 @@ import {
 } from "react-icons/fa";
 import styles from "./Login.module.css";
 import { useAuthStore } from "@store/auth.js";
-// import ConfirmModal from "../components/ConfirmModal.jsx";
+import ConfirmModal from "@shared/components/ConfirmModal/ConfirmModal.jsx";
+
+const TEXT = Object.freeze({
+  layout: {
+    title: "เข้าสู่ระบบ",
+    subtitle: "ระบบจัดการร้านหมาล่า",
+    badge: "ระบบปลอดภัย",
+    footer: "© 2025 ร้านหมาล่า - ระบบจัดการร้านอาหาร",
+  },
+  alert: {
+    defaultTitle: "แจ้งเตือน",
+    failureTitle: "เข้าสู่ระบบไม่สำเร็จ",
+    networkTitle: "เชื่อมต่อไม่สำเร็จ",
+    confirmText: "ปิด",
+  },
+  validation: {
+    usernameRequired: "กรุณากรอกชื่อผู้ใช้",
+    usernameTooShort: "ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร",
+    passwordRequired: "กรุณากรอกรหัสผ่าน",
+    passwordTooShort: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
+  },
+  notice: {
+    warning: "กรุณาตรวจสอบข้อมูลให้ครบถ้วนก่อนเข้าสู่ระบบ",
+    info: "กำลังตรวจสอบข้อมูลเข้าสู่ระบบ...",
+    success: "เข้าสู่ระบบสำเร็จ กำลังนำทางไปยังหน้าถัดไป",
+    passwordError: "รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง",
+    usernameError: "ไม่พบบัญชีผู้ใช้ กรุณาตรวจสอบชื่อผู้ใช้",
+    networkError: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่",
+    fallbackError: "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+  },
+  errorField: {
+    password: "รหัสผ่านไม่ถูกต้อง",
+    username: "ไม่พบบัญชีผู้ใช้",
+  },
+  includes: {
+    password: "รหัสผ่าน",
+    userMissing1: "ไม่พบ",
+    userMissing2: "ผู้ใช้",
+    userMissing3: "บัญชี",
+  },
+  form: {
+    usernameLabel: "ชื่อผู้ใช้",
+    usernamePlaceholder: "กรอกชื่อผู้ใช้",
+    passwordLabel: "รหัสผ่าน",
+    passwordPlaceholder: "กรอกรหัสผ่าน",
+    showPassword: "ซ่อนรหัสผ่าน",
+    hidePassword: "แสดงรหัสผ่าน",
+    submitLoading: "กำลังเข้าสู่ระบบ...",
+    submitIdle: "เข้าสู่ระบบ",
+  },
+});
+
+const createInitialModalState = () => ({
+  open: false,
+  title: "",
+  message: "",
+  icon: "warning",
+  danger: true,
+});
+
+const initialState = {
+  username: "",
+  password: "",
+  showPassword: false,
+  errors: {},
+  loading: false,
+  notice: null,
+  modal: createInitialModalState(),
+};
+
+const shouldResetNotice = (notice) =>
+  notice && (notice.type === "warning" || notice.type === "error");
+
+const resolveRedirect = (role) =>
+  role === "ADMIN" ? "/admin" :
+  role === "STAFF" ? "/staff/workflow" : "/";
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SET_ERRORS":
+      return { ...state, errors: action.payload };
+    case "CLEAR_FIELD_ERROR": {
+      if (!state.errors[action.field]) {
+        return state;
+      }
+      const nextErrors = { ...state.errors };
+      delete nextErrors[action.field];
+      return { ...state, errors: nextErrors };
+    }
+    case "SET_NOTICE":
+      return { ...state, notice: action.payload };
+    case "CLEAR_NOTICE":
+      if (!state.notice) {
+        return state;
+      }
+      return { ...state, notice: null };
+    case "SET_LOADING":
+      return { ...state, loading: action.value };
+    case "TOGGLE_PASSWORD":
+      return { ...state, showPassword: !state.showPassword };
+    case "OPEN_MODAL":
+      return {
+        ...state,
+        modal: {
+          open: true,
+          title: action.payload?.title || TEXT.alert.defaultTitle,
+          message: action.payload?.message || "",
+          icon: action.payload?.icon || "warning",
+          danger: action.payload?.danger ?? true,
+        },
+      };
+    case "CLOSE_MODAL":
+      if (!state.modal.open) {
+        return state;
+      }
+      return {
+        ...state,
+        modal: { ...state.modal, open: false },
+      };
+    default:
+      return state;
+  }
+};
 
 export default function Login() {
   const nav = useNavigate();
   const loc = useLocation();
   const { login: loginStore, user } = useAuthStore();
-  // const [showError, setshowError] = React.useState(false);
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const {
+    username,
+    password,
+    showPassword,
+    errors,
+    loading,
+    notice,
+    modal,
+  } = state;
 
-  // errors.username / errors.password = ข้อความใต้ช่อง
-  const [errors, setErrors] = useState({}); // { username?: string, password?: string }
-  const [loading, setLoading] = useState(false);
-  const [formNotice, setFormNotice] = useState(null); // { type: 'info' | 'warning' | 'error' | 'success', message }
+  const setLoadingState = (value) => dispatch({ type: "SET_LOADING", value });
+  const setErrorsState = (payload) => dispatch({ type: "SET_ERRORS", payload });
+  const clearFieldErrorState = (field) => dispatch({ type: "CLEAR_FIELD_ERROR", field });
+  const setNoticeState = (payload) => dispatch({ type: "SET_NOTICE", payload });
+  const clearNoticeState = () => dispatch({ type: "CLEAR_NOTICE" });
+  const openAlertModal = (payload = {}) => dispatch({ type: "OPEN_MODAL", payload });
+  const closeAlertModal = () => dispatch({ type: "CLOSE_MODAL" });
 
-  const validateForm = () => {
-    const e = {};
-    const trimmedUsername = username.trim();
-    const trimmedPassword = password.trim();
+  const handleFieldChange = (field) => (event) => {
+    dispatch({ type: "SET_FIELD", field, value: event.target.value });
+    if (errors[field]) {
+      clearFieldErrorState(field);
+    }
+    if (shouldResetNotice(notice)) {
+      clearNoticeState();
+    }
+  };
+
+  const assignFieldError = (field, message) => {
+    setErrorsState({ ...errors, [field]: message });
+  };
+
+  const togglePasswordVisibility = () => dispatch({ type: "TOGGLE_PASSWORD" });
+
+  const getTrimmedCredentials = () => ({
+    username: username.trim(),
+    password: password.trim(),
+  });
+
+  const validateForm = (credentials) => {
+    const validationErrors = {};
+    const { username: trimmedUsername, password: trimmedPassword } = credentials;
 
     if (!trimmedUsername) {
-      e.username = "กรุณากรอกชื่อผู้ใช้";
+      validationErrors.username = TEXT.validation.usernameRequired;
     } else if (trimmedUsername.length < 3) {
-      e.username = "ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร";
+      validationErrors.username = TEXT.validation.usernameTooShort;
     }
 
     if (!trimmedPassword) {
-      e.password = "กรุณากรอกรหัสผ่าน";
+      validationErrors.password = TEXT.validation.passwordRequired;
     } else if (trimmedPassword.length < 6) {
-      e.password = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+      validationErrors.password = TEXT.validation.passwordTooShort;
     }
 
-    setErrors(e);
-    const isValid = Object.keys(e).length === 0;
+    setErrorsState(validationErrors);
+    const isValid = Object.keys(validationErrors).length === 0;
 
     if (!isValid) {
-      setFormNotice({
+      setNoticeState({
         type: "warning",
-        message: "กรุณาตรวจสอบข้อมูลให้ครบถ้วนก่อนเข้าสู่ระบบ"
+        message: TEXT.notice.warning,
       });
     }
 
     return isValid;
   };
 
-  const handleLogin = async (e) => {
-    e?.preventDefault();
-    setFormNotice(null);
-    if (!validateForm() || loading) return;
+  const handleLogin = async (event) => {
+    event?.preventDefault();
+    clearNoticeState();
+    closeAlertModal();
+    if (loading) {
+      return;
+    }
 
-    setLoading(true);
-    setFormNotice({
+    const credentials = getTrimmedCredentials();
+    if (!validateForm(credentials)) {
+      return;
+    }
+
+    setLoadingState(true);
+    setNoticeState({
       type: "info",
-      message: "กำลังตรวจสอบข้อมูลเข้าสู่ระบบ..."
+      message: TEXT.notice.info,
     });
-    // ไม่ล้าง errors ที่นี่ ปล่อย validate จัดการไปแล้ว
 
     try {
-      const userProfile = await loginStore({
-        username: username.trim(),
-        password: password.trim(),
-      });
-      setFormNotice({
+      const userProfile = await loginStore(credentials);
+      setNoticeState({
         type: "success",
-        message: "เข้าสู่ระบบสำเร็จ กำลังนำทางไปยังหน้าถัดไป"
+        message: TEXT.notice.success,
       });
-      const to =
-        userProfile.role === "ADMIN" ? "/admin" :
-        userProfile.role === "STAFF" ? "/staff/workflow" : "/";
-      nav(to, { replace: true });
+      const target = resolveRedirect(userProfile.role);
+      nav(target, { replace: true });
     } catch (err) {
       console.warn("⚠️ Login failed:", err);
       const raw = String(err?.message || "").toLowerCase();
 
-      if (raw.includes("รหัสผ่าน") || raw.includes("password")) {
-        setErrors((prev) => ({ ...prev, password: "รหัสผ่านไม่ถูกต้อง" }));
-        setFormNotice({
-          type: "error",
-          message: "รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง"
-        });
+      if (raw.includes(TEXT.includes.password) || raw.includes("password")) {
+        const message = TEXT.notice.passwordError;
+        assignFieldError("password", TEXT.errorField.password);
+        setNoticeState({ type: "error", message });
+        openAlertModal({ title: TEXT.alert.failureTitle, message });
       } else if (
-        raw.includes("ไม่พบ") ||
-        raw.includes("ผู้ใช้") ||
-        raw.includes("บัญชี") ||
+        raw.includes(TEXT.includes.userMissing1) ||
+        raw.includes(TEXT.includes.userMissing2) ||
+        raw.includes(TEXT.includes.userMissing3) ||
         raw.includes("user not found")
       ) {
-        setErrors((prev) => ({ ...prev, username: "ไม่พบบัญชีผู้ใช้" }));
-        setFormNotice({
-          type: "error",
-          message: "ไม่พบบัญชีผู้ใช้ กรุณาตรวจสอบชื่อผู้ใช้"
-        });
+        const message = TEXT.notice.usernameError;
+        assignFieldError("username", TEXT.errorField.username);
+        setNoticeState({ type: "error", message });
+        openAlertModal({ title: TEXT.alert.failureTitle, message });
       } else if (raw.includes("network") || raw.includes("failed to fetch")) {
-        setFormNotice({
-          type: "error",
-          message: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่"
+        const message = TEXT.notice.networkError;
+        setNoticeState({ type: "error", message });
+        openAlertModal({
+          title: TEXT.alert.networkTitle,
+          message,
+          icon: "question",
+          danger: false,
         });
       } else {
-        setFormNotice({
-          type: "error",
-          message: err?.message || "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"
-        });
+        const message = err?.message || TEXT.notice.fallbackError;
+        setNoticeState({ type: "error", message });
+        openAlertModal({ title: TEXT.alert.failureTitle, message });
       }
     } finally {
-      setLoading(false);
-    }
-
-  };
-
-  const onKeyDown = (e) => e.key === "Enter" && handleLogin(e);
-  const togglePasswordVisibility = () => setShowPassword((v) => !v);
-
-  // เคลียร์ error รายช่องเมื่อพิมพ์ใหม่
-  const onChangeUsername = (e) => {
-    setUsername(e.target.value);
-    if (errors.username) {
-      setErrors((p) => {
-        const next = { ...p };
-        delete next.username;
-        return next;
-      });
-    }
-    if (formNotice && (formNotice.type === "warning" || formNotice.type === "error")) {
-      setFormNotice(null);
-    }
-  };
-  const onChangePassword = (e) => {
-    setPassword(e.target.value);
-    if (errors.password) {
-      setErrors((p) => {
-        const next = { ...p };
-        delete next.password;
-        return next;
-      });
-    }
-    if (formNotice && (formNotice.type === "warning" || formNotice.type === "error")) {
-      setFormNotice(null);
+      setLoadingState(false);
     }
   };
 
   useEffect(() => {
-    if (user) {
-      const redirectTo =
-        user.role === "ADMIN" ? "/admin" :
-        user.role === "STAFF" ? "/staff/workflow" : "/";
-      nav(loc.state?.from || redirectTo, { replace: true });
+    if (!user) {
+      return;
     }
+    const redirectTo = resolveRedirect(user.role);
+    nav(loc.state?.from || redirectTo, { replace: true });
   }, [user, nav, loc.state]);
 
   return (
@@ -180,30 +303,29 @@ export default function Login() {
             <div className={styles.logoContainer}>
               <FaUtensils className={styles.logoIcon} />
               <div className={styles.logoText}>
-                <h1 className={styles.title}>เข้าสู่ระบบ</h1>
-                <p className={styles.subtitle}>ระบบจัดการร้านหมาล่า</p>
+                <h1 className={styles.title}>{TEXT.layout.title}</h1>
+                <p className={styles.subtitle}>{TEXT.layout.subtitle}</p>
               </div>
             </div>
             <div className={styles.securityBadge}>
               <FaShieldAlt className={styles.securityIcon} />
-              <span>ระบบปลอดภัย</span>
+              <span>{TEXT.layout.badge}</span>
             </div>
           </div>
 
           <form className={styles.form} onSubmit={handleLogin} noValidate>
-            {/* Username */}
             <div className={styles.formGroup}>
               <label className={styles.label}>
                 <FaUser className={styles.labelIcon} />
-                ชื่อผู้ใช้
+                {TEXT.form.usernameLabel}
               </label>
               <div className={styles.inputContainer}>
                 <input
                   type="text"
                   value={username}
-                  onChange={onChangeUsername}
+                  onChange={handleFieldChange("username")}
                   className={`${styles.input} ${errors.username ? styles.inputError : ""}`}
-                  placeholder="กรอกชื่อผู้ใช้"
+                  placeholder={TEXT.form.usernamePlaceholder}
                   disabled={loading}
                   autoComplete="username"
                   aria-invalid={!!errors.username}
@@ -219,19 +341,18 @@ export default function Login() {
               )}
             </div>
 
-            {/* Password */}
             <div className={styles.formGroup}>
               <label className={styles.label}>
                 <FaLock className={styles.labelIcon} />
-                รหัสผ่าน
+                {TEXT.form.passwordLabel}
               </label>
               <div className={styles.inputContainer}>
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={onChangePassword}
+                  onChange={handleFieldChange("password")}
                   className={`${styles.input} ${errors.password ? styles.inputError : ""}`}
-                  placeholder="กรอกรหัสผ่าน"
+                  placeholder={TEXT.form.passwordPlaceholder}
                   disabled={loading}
                   autoComplete="current-password"
                   aria-invalid={!!errors.password}
@@ -243,7 +364,7 @@ export default function Login() {
                   className={styles.passwordToggle}
                   onClick={togglePasswordVisibility}
                   disabled={loading}
-                  aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                  aria-label={showPassword ? TEXT.form.showPassword : TEXT.form.hidePassword}
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
@@ -256,56 +377,54 @@ export default function Login() {
               )}
             </div>
 
-            {formNotice && (
+            {notice && (
               <div
-                className={`${styles.formNotice} ${styles[formNotice.type]}`}
+                className={`${styles.formNotice} ${styles[notice.type]}`}
                 role="status"
                 aria-live="polite"
               >
-                {formNotice.type === "success" ? (
+                {notice.type === "success" ? (
                   <FaCheckCircle className={styles.noticeIcon} />
-                ) : formNotice.type === "info" ? (
+                ) : notice.type === "info" ? (
                   <FaInfoCircle className={styles.noticeIcon} />
                 ) : (
                   <FaExclamationTriangle className={styles.noticeIcon} />
                 )}
-                {formNotice.message}
+                {notice.message}
               </div>
             )}
 
-            {/* Submit */}
             <button type="submit" className={styles.submitButton} disabled={loading}>
               {loading ? (
                 <>
                   <FaSpinner className={styles.spinnerIcon} />
-                  กำลังเข้าสู่ระบบ...
+                  {TEXT.form.submitLoading}
                 </>
               ) : (
                 <>
                   <FaSignInAlt className={styles.buttonIcon} />
-                  เข้าสู่ระบบ
+                  {TEXT.form.submitIdle}
                 </>
               )}
             </button>
           </form>
 
           <div className={styles.footer}>
-            <p className={styles.footerText}>© 2025 ร้านหมาล่า - ระบบจัดการร้านอาหาร</p>
+            <p className={styles.footerText}>{TEXT.layout.footer}</p>
           </div>
-          {/* <ConfirmModal
-            open={showError}
-            title={errors.password}
-            message="asdasd?"
-            confirmText="asd"
-            cancelText="ยกเลิก"
-            danger
-            icon="warning"
-            onCancel={() => setshowError(false)}
-            onConfirm={() => setshowError(false)}
-          /> */}
+          <ConfirmModal
+            open={modal.open}
+            title={modal.title || TEXT.alert.defaultTitle}
+            message={modal.message}
+            confirmText={TEXT.alert.confirmText}
+            cancelText={null}
+            icon={modal.icon}
+            danger={modal.danger}
+            onCancel={closeAlertModal}
+            onConfirm={closeAlertModal}
+          />
         </div>
       </div>
     </div>
   );
 }
-

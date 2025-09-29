@@ -37,10 +37,24 @@ export default function ConfirmModal({
     return <FaQuestionCircle className={styles.iconQuestion} />; // Default
   };
 
+  const showCancel = cancelText !== null && cancelText !== undefined;
+  const showConfirm = confirmText !== null && confirmText !== undefined;
+
+  React.useEffect(() => {
+    if (open) {
+      try {
+        const target = typeof document !== 'undefined' ? document.body : null;
+        console.log('🪟 ConfirmModal render', { title, message, danger, icon, targetAvailable: !!target });
+      } catch (error) {
+        console.warn('ConfirmModal: unable to access document.body', error);
+      }
+    }
+  }, [open, title, message, danger, icon]);
+
   if (!open) return null;
 
-  return ReactDOM.createPortal(
-    <div className={styles.backdrop} onClick={onCancel} role="dialog" aria-modal="true">
+  const modalContent = (
+    <div className={styles.backdrop} onClick={onCancel} role="dialog" aria-modal="true" data-modal="confirm-modal">
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <div className={styles.iconContainer}>
@@ -51,19 +65,32 @@ export default function ConfirmModal({
             <p className={styles.message}>{message}</p>
           </div>
         </div>
-        <div className={styles.actions}>
-          <button className={styles.btnCancel} onClick={onCancel}>
-            {cancelText}
-          </button>
-          <button
-            className={`${styles.btnConfirm} ${danger ? styles.btnDanger : ''}`}
-            onClick={onConfirm}
-          >
-            {confirmText}
-          </button>
-        </div>
+        {(showCancel || showConfirm) && (
+          <div className={styles.actions}>
+            {showCancel && (
+              <button className={styles.btnCancel} onClick={onCancel}>
+                {cancelText}
+              </button>
+            )}
+            {showConfirm && (
+              <button
+                className={`${styles.btnConfirm} ${danger ? styles.btnDanger : ''}`}
+                onClick={onConfirm}
+              >
+                {confirmText}
+              </button>
+            )}
+          </div>
+        )}
       </div>
-    </div>,
-    document.body
+    </div>
   );
+
+  const portalTarget = typeof document !== 'undefined' ? document.body : null;
+  if (portalTarget) {
+    return ReactDOM.createPortal(modalContent, portalTarget);
+  }
+
+  console.warn('ConfirmModal: document.body unavailable, rendering inline');
+  return modalContent;
 }
