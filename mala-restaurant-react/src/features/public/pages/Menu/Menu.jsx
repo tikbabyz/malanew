@@ -1,5 +1,4 @@
 import React from "react";
-import { useDataStore } from "@store/data.js";
 import { getImageUrl } from "@services/api";  // ✅ เพิ่ม import สำหรับ image URL
 import styles from "./Menu.module.css";
 import { Link } from "react-router-dom";
@@ -14,8 +13,7 @@ import {
   FaImage,
   FaFilter,
   FaStar,
-  FaCheckCircle,
-  FaExclamationCircle
+  FaPalette
 } from "react-icons/fa";
 import API from '@services/api';
 
@@ -207,12 +205,11 @@ export default function Menu() {
                 const priceInfo = calculatePrice(product);
                 const hasImageError = imageErrors.has(product.id);
                 const isOutOfStock = product.stock <= 0;
-                const isLowStock = product.stock > 0 && product.stock <= 5;
-                
+
                 return (
                   <div 
                     key={product.id} 
-                    className={`${styles.productCard} ${isOutOfStock ? styles.outOfStock : ''} ${isLowStock ? styles.lowStock : ''}`}
+                    className={`${styles.productCard} ${isOutOfStock ? styles.outOfStock : ''}`}
                   >
                     {/* Product Image */}
                     <div className={styles.productImageContainer}>
@@ -253,10 +250,6 @@ export default function Menu() {
                         <h3 className={`${styles.productName} ${isOutOfStock ? styles.outOfStock : ''}`}>
                           {product.name}
                         </h3>
-                        <span className={styles.productCategory}>
-                          <FaTags className={styles.categoryIcon} />
-                          {product.category}
-                        </span>
                       </div>
 
                       <div className={styles.productPricing}>
@@ -286,23 +279,13 @@ export default function Menu() {
                       </div>
 
                       <div className={styles.productMeta}>
-                        <span className={`${styles.stockInfo} ${isOutOfStock ? styles.outOfStock : ''} ${isLowStock ? styles.lowStock : ''}`}>
-                          {isOutOfStock ? (
-                            <>
-                              <FaExclamationTriangle className={styles.stockIcon} />
-                              สินค้าหมด
-                            </>
-                          ) : isLowStock ? (
-                            <>
-                              <FaExclamationCircle className={styles.stockIcon} />
-                              เหลือน้อย: {product.stock} ชิ้น
-                            </>
-                          ) : (
-                            <>
-                              <FaCheckCircle className={styles.stockIcon} />
-                              คงเหลือ: {product.stock} ชิ้น
-                            </>
-                          )}
+                        <span className={styles.metaItem}>
+                          <FaTags className={styles.metaIcon} />
+                          {product.category || "ไม่ระบุประเภท"}
+                        </span>
+                        <span className={styles.metaItem}>
+                          <FaPalette className={styles.metaIcon} />
+                          สีไม้: {product.color || "ไม่ระบุ"}
                         </span>
                       </div>
                     </div>

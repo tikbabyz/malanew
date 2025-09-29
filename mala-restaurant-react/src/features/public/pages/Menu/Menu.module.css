@@ -404,19 +404,27 @@
 .productMeta {
   border-top: 1px solid #f3f4f6;
   padding-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-.stockInfo {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
+.metaItem {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.375rem;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+  font-weight: 500;
+  background: #f9fafb;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.metaIcon {
+  font-size: 0.875rem;
+  color: #ef4444;
 }
 
 /* Discount Badge */
@@ -530,6 +538,16 @@
   pointer-events: none;
 }
 
+.productInfo.outOfStock .metaItem {
+  background: rgba(156, 163, 175, 0.15);
+  border-color: rgba(156, 163, 175, 0.3);
+  color: #6b7280;
+}
+
+.productInfo.outOfStock .metaIcon {
+  color: #9ca3af;
+}
+
 .productName.outOfStock {
   color: #9ca3af;
   text-decoration: line-through;
@@ -541,46 +559,6 @@
 .finalPrice.outOfStock,
 .originalPrice.outOfStock {
   color: #9ca3af;
-}
-
-.stockInfo.outOfStock {
-  color: #ef4444;
-  font-weight: 600;
-  background: rgba(239, 68, 68, 0.1);
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.375rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.stockIcon {
-  font-size: 0.75rem;
-}
-
-.stockInfo:not(.outOfStock) .stockIcon {
-  color: #10b981;
-}
-
-.stockInfo.outOfStock .stockIcon {
-  animation: pulse 2s infinite;
-}
-
-/* Low Stock Styles */
-.productCard.lowStock {
-  border-color: #f59e0b;
-  box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1);
-}
-
-.stockInfo.lowStock {
-  color: #d97706;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.stockInfo.lowStock .stockIcon {
-  color: #f59e0b;
-  animation: pulse 2s infinite;
 }
 
 /* Footer Note */
