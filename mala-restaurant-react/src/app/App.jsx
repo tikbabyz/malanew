@@ -123,6 +123,15 @@ function App() {
                       <Route index element={<AdminDashboard />} />
 
                       <Route
+                        path="workflowpos"
+                        element={
+                          <PermissionGuard permission="pos">
+                            <WorkflowPOS />
+                          </PermissionGuard>
+                        }
+                      />
+
+                      <Route
                         path="users"
                         element={
                           <PermissionGuard permission="users">

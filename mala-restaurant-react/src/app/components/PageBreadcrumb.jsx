@@ -19,6 +19,7 @@ function PageBreadcrumb() {
     }
     if (path.startsWith('/admin')) {
       if (path === '/admin') return 'Admin › แดชบอร์ด';
+      if (path === '/admin/workflowpos') return 'Admin › ระบบขายแบบครบวงจร';
       if (path === '/admin/users') return 'Admin › จัดการผู้ใช้';
       if (path === '/admin/products') return 'Admin › จัดการสินค้า';
       if (path === '/admin/permissions') return 'Admin › สิทธิ์การใช้งาน';

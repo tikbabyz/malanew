@@ -26,30 +26,52 @@ function AppNav() {
   };
 
   const renderNavLinks = () => {
-    if (user?.role === "STAFF") {
+    if (user?.role === "ADMIN") {
       return (
         <>
-          <Link to="/staff/workflow" onClick={close} className={`${styles.navLink} ${styles.staffLink}`}>
+          <Link
+            to="/admin"
+            onClick={close}
+            className={`${styles.navLink} ${styles.adminLink} ${isActive("/admin") ? styles.active : ""}`}
+          >
+            <span className={styles.navIcon}>⚙️</span>
+            <span className={styles.navText}>ผู้ดูแลระบบ</span>
+          </Link>
+          <Link
+            to="/admin/workflowpos"
+            onClick={close}
+            className={`${styles.navLink} ${styles.staffLink} ${isActive("/admin/workflowpos") ? styles.active : ""}`}
+          >
             <span className={styles.navIcon}>🔄</span>
             <span className={styles.navText}>ระบบขายครบวงจร</span>
           </Link>
-          <Link to="/staff/orders" onClick={close} className={`${styles.navLink} ${styles.staffLink}`}>
+        </>
+      );
+    }
+
+    if (user?.role === "STAFF") {
+      return (
+        <>
+          <Link
+            to="/staff/workflow"
+            onClick={close}
+            className={`${styles.navLink} ${styles.staffLink} ${isActive("/staff/workflow") ? styles.active : ""}`}
+          >
+            <span className={styles.navIcon}>🔄</span>
+            <span className={styles.navText}>ระบบขายครบวงจร</span>
+          </Link>
+          <Link
+            to="/staff/orders"
+            onClick={close}
+            className={`${styles.navLink} ${styles.staffLink} ${isActive("/staff/orders") ? styles.active : ""}`}
+          >
             <span className={styles.navIcon}>📄</span>
             <span className={styles.navText}>ใบเสร็จ</span>
           </Link>
         </>
       );
     }
-    
-    if (location.pathname.startsWith("/admin") && user?.role === "ADMIN") {
-      return (
-        <Link to="/admin" onClick={close} className={`${styles.navLink} ${styles.adminLink}`}>
-          <span className={styles.navIcon}>⚙️</span>
-          <span className={styles.navText}>ผู้ดูแลระบบ</span>
-        </Link>
-      );
-    }
-    
+
     // Default public links
     return (
       <>

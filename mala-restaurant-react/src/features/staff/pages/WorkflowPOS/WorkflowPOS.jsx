@@ -813,7 +813,7 @@ export default function WorkflowPOS() {
     })();
   }, []);
 
-  if (!user || user.role !== "STAFF") {
+  if (!user || (user.role !== "STAFF" && user.role !== "ADMIN")) {
     return (
       <div className={styles.container}>
         <div className={styles.loadingState}>
