@@ -622,7 +622,7 @@ export default function WorkflowPOS() {
             size: slip.size,
             uploadTime: slip.uploadTime,
             slipUrl: slip.slipUrl, // URL ของสลิปในเซิร์ฟเวอร์
-            slipId: slip.id
+            slipId: slip.slipId || slip.id
           }))
         };
 
@@ -711,7 +711,7 @@ export default function WorkflowPOS() {
       }
       
       const data = await response.json();
-      return data.slipUrl; // URL ของสลิปที่บันทึกแล้ว
+      return data;
     } catch (error) {
       console.error('Failed to upload slip:', error);
       throw error;
@@ -728,21 +728,29 @@ export default function WorkflowPOS() {
       
       for (const file of files) {
         // อัปโหลดไฟล์ไปเซิร์ฟเวอร์
-        const slipUrl = await uploadSlipToServer(file);
-        
+        const uploaded = await uploadSlipToServer(file);
+        const slipUrl = uploaded?.slipUrl || '';
+        const slipId = uploaded?.slipId;
+        const storedName = uploaded?.filename || file.name;
+
+        if (!slipUrl || !slipId) {
+          throw new Error('การอัปโหลดสลิปล้มเหลว: ไม่พบข้อมูลจากเซิร์ฟเวอร์');
+        }
+
         // สร้าง preview ของสลิป
         const reader = new FileReader();
         const preview = await new Promise((resolve) => {
           reader.onload = (e) => resolve(e.target.result);
           reader.readAsDataURL(file);
         });
-        
+
         newSlips.push({
-          id: Date.now() + Math.random(),
+          id: slipId,
+          slipId,
           file,
           preview,
           slipUrl, // URL ของสลิปในเซิร์ฟเวอร์
-          name: file.name,
+          name: storedName,
           size: file.size,
           uploadTime: new Date().toISOString()
         });

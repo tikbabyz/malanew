@@ -9,38 +9,55 @@ export const API_PREFIX = `${API_BASE}/api`;
 // ✅ Helper function สำหรับสร้าง URL รูปภาพ
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
-  
-  console.log('🖼️ Processing image path:', imagePath);
-  
-  // ถ้า imagePath เป็น full URL อยู่แล้ว
-  if (imagePath.startsWith('http')) {
-    console.log('✅ Already full URL:', imagePath);
-    return imagePath;
+
+  const raw = String(imagePath).trim();
+  if (!raw) return null;
+
+  if (/^https?:\/\//i.test(raw)) {
+    return raw;
   }
-  
-  // ถ้าเริ่มด้วย /uploads
-  if (imagePath.startsWith('/uploads')) {
-    const fullUrl = `${API_BASE}${imagePath}`;
-    console.log('✅ Uploads path:', fullUrl);
-    return fullUrl;
+
+  if (raw.startsWith('/')) {
+    return API_BASE + raw;
   }
-  
-  // ถ้าเริ่มด้วย /api
-  if (imagePath.startsWith('/api')) {
-    const fullUrl = `${API_BASE}${imagePath}`;
-    console.log('✅ API path:', fullUrl);
-    return fullUrl;
+
+  const normalized = raw.replace(/^\.\//, '');
+  const lower = normalized.toLowerCase();
+
+  if (lower.startsWith('api/')) {
+    return API_BASE + '/' + normalized;
   }
-  
-  // ถ้าเป็น filename อย่างเดียว - ลองหลาย pattern
-  const patterns = [
-    `/api/products/images/${imagePath}`,
-    `/uploads/products/${imagePath}`
-  ];
-  
-  const finalUrl = `${API_BASE}${patterns[0]}`;
-  console.log('✅ Generated URL:', finalUrl);
-  return finalUrl;
+
+  if (lower.startsWith('uploads/')) {
+    return API_BASE + '/' + normalized;
+  }
+
+  const filename = normalized.split('/').pop();
+  if (!filename) {
+    return null;
+  }
+
+  if (lower.startsWith('products/')) {
+    return API_BASE + '/api/products/images/' + filename;
+  }
+
+  if (lower.startsWith('qr/') || lower.startsWith('qr_codes/')) {
+    return API_BASE + '/api/qr/images/' + filename;
+  }
+
+  if (lower.startsWith('slips/')) {
+    return API_BASE + '/api/slips/' + filename;
+  }
+
+  if (filename.startsWith('qr_')) {
+    return API_BASE + '/api/qr/images/' + filename;
+  }
+
+  if (filename.startsWith('slip_')) {
+    return API_BASE + '/api/slips/' + filename;
+  }
+
+  return API_BASE + '/api/products/images/' + filename;
 };
 
 console.log('🔧 API Configuration:');

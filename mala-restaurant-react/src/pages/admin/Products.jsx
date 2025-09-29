@@ -342,13 +342,8 @@ export default function Products() {
 
     try {
       const newStock = (selectedProduct.stock || 0) + addAmount;
-      const updatedProduct = { ...selectedProduct, stock: newStock };
-      
-      // Update in database via API
-      await API.products.update(selectedProduct.id, updatedProduct);
-      // Update local state
-      updateProduct(selectedProduct.id, updatedProduct);
-      
+
+      await updateProduct(selectedProduct.id, { stock: newStock });
       setShowStockModal(false);
       setSelectedProduct(null);
       setStockInput('');
@@ -412,13 +407,9 @@ export default function Products() {
       };
 
       if (editingProduct) {
-        // Update existing product via API
-        const updatedProduct = await API.products.update(editingProduct.id, productData);
-        updateProduct(editingProduct.id, updatedProduct);
+        await updateProduct(editingProduct.id, productData);
       } else {
-        // Create new product via API
-        const newProduct = await API.products.create(productData);
-        addProduct(newProduct);
+        await addProduct(productData);
       }
 
       handleCloseForm();
