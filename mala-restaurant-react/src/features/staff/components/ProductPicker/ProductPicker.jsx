@@ -7,9 +7,11 @@ import styles from "./ProductPicker.module.css";
 export default function ProductPicker({ products: productsProp, onAdd }) {
   const [products, setProducts] = React.useState(productsProp || []);
   React.useEffect(() => {
-    if (!productsProp) {
-      API.products.list().then(setProducts);
+    if (productsProp) {
+      setProducts(productsProp);
+      return;
     }
+    API.products.list().then(setProducts);
   }, [productsProp]);
 
   const [q, setQ] = React.useState("");

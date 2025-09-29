@@ -91,13 +91,34 @@ export default function WorkflowPOS() {
   } = useDataStore();
   const beverageProducts = useMemo(() => {
     const keywordTh = "เครื่องดื่ม";
-    const keywordEn = "beverage";
+    const keywordEn = "drink";
     return (products || []).filter((product) => {
       const category = (product?.category || "").toLowerCase();
       return category.includes(keywordTh) || category.includes(keywordEn);
     });
   }, [products]);
   const currentUserName = user?.displayName || user?.name || user?.username || "พนักงาน";
+
+  const colorOptions = useMemo(() => {
+    if (!colorPrices) return [];
+
+    return Object.entries(colorPrices)
+      .map(([rawKey, entry]) => {
+        const normalized = norm(rawKey);
+        const label = COLOR_LABEL[normalized] || rawKey;
+        const price = Number(entry?.price ?? 0);
+        const stock = entry?.stock;
+        return {
+          key: rawKey,
+          normalized,
+          label,
+          price,
+          stock: typeof stock === "number" ? stock : null,
+        };
+      })
+      .filter((option) => option.price > 0)
+      .sort((a, b) => a.label.localeCompare(b.label, "th"));
+  }, [colorPrices]);
 
   // Loading state
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -280,6 +301,59 @@ export default function WorkflowPOS() {
 
   const removeItem = (id) => {
     setItems((prev) => prev.filter((x) => String(x.id) !== String(id)));
+  };
+
+  const addColorItem = (colorKey) => {
+    if (!colorKey) return;
+
+    const normalized = norm(colorKey);
+    const colorEntry =
+      colorPrices?.[normalized] ??
+      colorPrices?.[colorKey] ??
+      colorPrices?.[String(colorKey).toLowerCase()];
+
+    if (!colorEntry) {
+      alert("ไม่พบข้อมูลราคาของสีนี้");
+      return;
+    }
+
+    const price = Number(colorEntry?.price ?? 0);
+    if (!price || Number.isNaN(price)) {
+      alert("ยังไม่ได้ตั้งราคาสำหรับสีนี้");
+      return;
+    }
+
+    const stock = typeof colorEntry?.stock === "number" ? colorEntry.stock : null;
+    const itemId = `color-${normalized}`;
+
+    setItems((prev) => {
+      const existingIndex = prev.findIndex((item) => String(item.id) === itemId);
+      if (existingIndex > -1) {
+        const nextQty = Number(prev[existingIndex].qty || 0) + 1;
+        if (stock != null && nextQty > stock) {
+          alert(`สีนี้คงเหลือ ${stock} ไม้`);
+          return prev;
+        }
+        const updated = [...prev];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          qty: nextQty,
+        };
+        return updated;
+      }
+
+      return [
+        ...prev,
+        {
+          id: itemId,
+          name: COLOR_LABEL[normalized] || normalized,
+          color: normalized,
+          price,
+          qty: 1,
+          stock: stock ?? undefined,
+        },
+      ];
+    });
   };
 
   // Camera Functions
@@ -893,6 +967,38 @@ export default function WorkflowPOS() {
               <div className={styles.productSection}>
                 <h3 className={styles.sectionTitle}>รายการสินค้า</h3>
                 <ProductPicker products={beverageProducts} onAdd={addProduct} />
+
+                <div className={styles.colorSection}>
+                  <h4 className={styles.colorTitle}>สีไม้ย่าง</h4>
+                  {colorOptions.length === 0 ? (
+                    <p className={styles.colorEmpty}>ยังไม่มีการตั้งค่าสีไม้</p>
+                  ) : (
+                    <div className={styles.colorGrid}>
+                      {colorOptions.map((option) => {
+                        const isOutOfStock = option.stock != null && option.stock <= 0;
+                        return (
+                          <button
+                            key={option.key}
+                            type="button"
+                            className={`${styles.colorButton} ${isOutOfStock ? styles.colorButtonDisabled : ""}`}
+                            onClick={() => addColorItem(option.key)}
+                            disabled={isOutOfStock}
+                            title={isOutOfStock ? "สีนี้หมดสต็อก" : option.label}
+                          >
+                            <span className={`${styles.colorSwatch} ${styles[`colorSwatch_${option.normalized}`] || ""}`} />
+                            <span className={styles.colorMeta}>
+                              <span className={styles.colorLabel}>{option.label}</span>
+                              <span className={styles.colorPrice}>{option.price.toFixed(2)} ฿</span>
+                            </span>
+                            {option.stock != null && (
+                              <span className={styles.colorStock}>คงเหลือ {option.stock} ไม้</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Cart */}

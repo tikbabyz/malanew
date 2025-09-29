@@ -196,6 +196,94 @@
   border: 2px solid #fecaca;
 }
 
+.colorSection {
+  margin-top: 1.75rem;
+  border-top: 1px solid #fbbf24;
+  padding-top: 1.5rem;
+}
+
+.colorTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #dc2626;
+  margin: 0 0 1rem 0;
+}
+
+.colorEmpty {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.colorButton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fff5f5;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  text-align: left;
+}
+
+.colorButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(220, 38, 38, 0.1);
+  border-color: #dc2626;
+}
+
+.colorButtonDisabled,
+.colorButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.colorSwatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 2px solid rgba(17, 24, 39, 0.15);
+  flex-shrink: 0;
+}
+
+.colorSwatch_red { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+.colorSwatch_green { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.colorSwatch_blue { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+.colorSwatch_pink { background: linear-gradient(135deg, #f472b6, #db2777); }
+.colorSwatch_purple { background: linear-gradient(135deg, #c084fc, #7c3aed); }
+
+.colorMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.colorLabel {
+  font-weight: 600;
+  color: #374151;
+}
+
+.colorPrice {
+  font-size: 0.95rem;
+  color: #dc2626;
+}
+
+.colorStock {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
 .cartSection {
   background: white;
   border-radius: 16px;
