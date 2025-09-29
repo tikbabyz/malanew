@@ -2,8 +2,17 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  FaUser, FaLock, FaSignInAlt, FaSpinner, FaExclamationTriangle,
-  FaEye, FaEyeSlash, FaUtensils, FaShieldAlt
+  FaUser,
+  FaLock,
+  FaSignInAlt,
+  FaSpinner,
+  FaExclamationTriangle,
+  FaEye,
+  FaEyeSlash,
+  FaUtensils,
+  FaShieldAlt,
+  FaInfoCircle,
+  FaCheckCircle
 } from "react-icons/fa";
 import styles from "./Login.module.css";
 import { useAuthStore } from "@store/auth.js";
@@ -22,22 +31,48 @@ export default function Login() {
   // errors.username / errors.password = ข้อความใต้ช่อง
   const [errors, setErrors] = useState({}); // { username?: string, password?: string }
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [formNotice, setFormNotice] = useState(null); // { type: 'info' | 'warning' | 'error' | 'success', message }
 
   const validateForm = () => {
     const e = {};
-    if (!username.trim()) e.username = "กรุณากรอกชื่อผู้ใช้";
-    if (!password) e.password = "กรุณากรอกรหัสผ่าน";
+    const trimmedUsername = username.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedUsername) {
+      e.username = "กรุณากรอกชื่อผู้ใช้";
+    } else if (trimmedUsername.length < 3) {
+      e.username = "ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร";
+    }
+
+    if (!trimmedPassword) {
+      e.password = "กรุณากรอกรหัสผ่าน";
+    } else if (trimmedPassword.length < 6) {
+      e.password = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+    }
+
     setErrors(e);
-    return Object.keys(e).length === 0;
+    const isValid = Object.keys(e).length === 0;
+
+    if (!isValid) {
+      setFormNotice({
+        type: "warning",
+        message: "กรุณาตรวจสอบข้อมูลให้ครบถ้วนก่อนเข้าสู่ระบบ"
+      });
+    }
+
+    return isValid;
   };
 
   const handleLogin = async (e) => {
     e?.preventDefault();
-    setError("");
+    setFormNotice(null);
     if (!validateForm() || loading) return;
 
     setLoading(true);
+    setFormNotice({
+      type: "info",
+      message: "กำลังตรวจสอบข้อมูลเข้าสู่ระบบ..."
+    });
     // ไม่ล้าง errors ที่นี่ ปล่อย validate จัดการไปแล้ว
 
     try {
@@ -45,33 +80,49 @@ export default function Login() {
         username: username.trim(),
         password: password.trim(),
       });
+      setFormNotice({
+        type: "success",
+        message: "เข้าสู่ระบบสำเร็จ กำลังนำทางไปยังหน้าถัดไป"
+      });
       const to =
         userProfile.role === "ADMIN" ? "/admin" :
         userProfile.role === "STAFF" ? "/staff/workflow" : "/";
       nav(to, { replace: true });
-    }  catch (err) {
-  console.warn("⚠️ Login failed:", err);
-  const raw = String(err?.message || "").toLowerCase();
+    } catch (err) {
+      console.warn("⚠️ Login failed:", err);
+      const raw = String(err?.message || "").toLowerCase();
 
-  // เคลียร์ global error เพื่อให้โชว์รายช่อง
-  setError("");
-
-  if (raw.includes("รหัสผ่าน") || raw.includes("password")) {
-    setErrors(prev => ({ ...prev, password: "รหัสผ่านไม่ถูกต้อง" }));
-    console.log('[DEBUG] setErrors(password): รหัสผ่านไม่ถูกต้อง');
-  } else if (
-    raw.includes("ไม่พบ") || raw.includes("ผู้ใช้") || raw.includes("บัญชี") ||
-    raw.includes("user not found")
-  ) {
-    setErrors(prev => ({ ...prev, username: "ไม่พบบัญชีผู้ใช้" }));
-    console.log('[DEBUG] setErrors(username): ไม่พบบัญชีผู้ใช้');
-  } else {
-    setError(err?.message || "เข้าสู่ระบบไม่สำเร็จ");
-    console.log('[DEBUG] setError(global):', err?.message || "เข้าสู่ระบบไม่สำเร็จ");
-  }
-} finally {
-  setLoading(false);
-}
+      if (raw.includes("รหัสผ่าน") || raw.includes("password")) {
+        setErrors((prev) => ({ ...prev, password: "รหัสผ่านไม่ถูกต้อง" }));
+        setFormNotice({
+          type: "error",
+          message: "รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง"
+        });
+      } else if (
+        raw.includes("ไม่พบ") ||
+        raw.includes("ผู้ใช้") ||
+        raw.includes("บัญชี") ||
+        raw.includes("user not found")
+      ) {
+        setErrors((prev) => ({ ...prev, username: "ไม่พบบัญชีผู้ใช้" }));
+        setFormNotice({
+          type: "error",
+          message: "ไม่พบบัญชีผู้ใช้ กรุณาตรวจสอบชื่อผู้ใช้"
+        });
+      } else if (raw.includes("network") || raw.includes("failed to fetch")) {
+        setFormNotice({
+          type: "error",
+          message: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่"
+        });
+      } else {
+        setFormNotice({
+          type: "error",
+          message: err?.message || "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
 
   };
 
@@ -81,11 +132,29 @@ export default function Login() {
   // เคลียร์ error รายช่องเมื่อพิมพ์ใหม่
   const onChangeUsername = (e) => {
     setUsername(e.target.value);
-    if (errors.username) setErrors((p) => ({ ...p, username: undefined }));
+    if (errors.username) {
+      setErrors((p) => {
+        const next = { ...p };
+        delete next.username;
+        return next;
+      });
+    }
+    if (formNotice && (formNotice.type === "warning" || formNotice.type === "error")) {
+      setFormNotice(null);
+    }
   };
   const onChangePassword = (e) => {
     setPassword(e.target.value);
-    if (errors.password) setErrors((p) => ({ ...p, password: undefined }));
+    if (errors.password) {
+      setErrors((p) => {
+        const next = { ...p };
+        delete next.password;
+        return next;
+      });
+    }
+    if (formNotice && (formNotice.type === "warning" || formNotice.type === "error")) {
+      setFormNotice(null);
+    }
   };
 
   useEffect(() => {
@@ -187,11 +256,20 @@ export default function Login() {
               )}
             </div>
 
-            {/* Global error (อื่น ๆ) */}
-            {error && (
-              <div className={styles.submitError} aria-live="polite">
-                <FaExclamationTriangle className={styles.errorIcon} />
-                {error}
+            {formNotice && (
+              <div
+                className={`${styles.formNotice} ${styles[formNotice.type]}`}
+                role="status"
+                aria-live="polite"
+              >
+                {formNotice.type === "success" ? (
+                  <FaCheckCircle className={styles.noticeIcon} />
+                ) : formNotice.type === "info" ? (
+                  <FaInfoCircle className={styles.noticeIcon} />
+                ) : (
+                  <FaExclamationTriangle className={styles.noticeIcon} />
+                )}
+                {formNotice.message}
               </div>
             )}
 

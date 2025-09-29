@@ -262,9 +262,45 @@
   font-family: 'Inter', 'Noto Sans Thai', 'Sarabun', sans-serif;
 }
 
+.formNotice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: 'Inter', 'Noto Sans Thai', 'Sarabun', sans-serif;
+  transition: all 0.2s ease;
+}
+
+.noticeIcon,
 .errorIcon {
   font-size: 0.875rem;
   flex-shrink: 0;
+}
+
+.info {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+.warning {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #b45309;
+}
+
+.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
 }
 
 /* Submit Button */
