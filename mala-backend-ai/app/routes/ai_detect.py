@@ -5,6 +5,7 @@ import json
 from typing import Any, Dict, List, Optional, Tuple
 
 from flask import Blueprint, current_app, jsonify, request
+import numpy as np
 
 
 ai_bp = Blueprint("ai", __name__, url_prefix="/api")
