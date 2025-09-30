@@ -1,4 +1,4 @@
-// src/pages/Login.jsx
+﻿// src/pages/Login.jsx
 import React, { useEffect, useReducer } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -29,6 +29,8 @@ const TEXT = Object.freeze({
     defaultTitle: "แจ้งเตือน",
     failureTitle: "เข้าสู่ระบบไม่สำเร็จ",
     networkTitle: "เชื่อมต่อไม่สำเร็จ",
+    passwordTitle: "รหัสผ่านไม่ถูกต้อง",
+    usernameTitle: "ไม่พบบัญชีผู้ใช้",
     confirmText: "ปิด",
   },
   validation: {
@@ -119,6 +121,7 @@ const reducer = (state, action) => {
     case "TOGGLE_PASSWORD":
       return { ...state, showPassword: !state.showPassword };
     case "OPEN_MODAL":
+      console.log('🔴 OPEN_MODAL action:', action.payload);
       return {
         ...state,
         modal: {
@@ -130,6 +133,7 @@ const reducer = (state, action) => {
         },
       };
     case "CLOSE_MODAL":
+      console.log('🔵 CLOSE_MODAL action');
       if (!state.modal.open) {
         return state;
       }
@@ -163,8 +167,14 @@ export default function Login() {
   const clearFieldErrorState = (field) => dispatch({ type: "CLEAR_FIELD_ERROR", field });
   const setNoticeState = (payload) => dispatch({ type: "SET_NOTICE", payload });
   const clearNoticeState = () => dispatch({ type: "CLEAR_NOTICE" });
-  const openAlertModal = (payload = {}) => dispatch({ type: "OPEN_MODAL", payload });
-  const closeAlertModal = () => dispatch({ type: "CLOSE_MODAL" });
+  const openAlertModal = (payload = {}) => {
+    console.log('🟡 openAlertModal called with:', payload);
+    dispatch({ type: "OPEN_MODAL", payload });
+  };
+  const closeAlertModal = () => {
+    console.log('🟣 closeAlertModal called');
+    dispatch({ type: "CLOSE_MODAL" });
+  };
 
   const handleFieldChange = (field) => (event) => {
     dispatch({ type: "SET_FIELD", field, value: event.target.value });
@@ -219,7 +229,10 @@ export default function Login() {
   const handleLogin = async (event) => {
     event?.preventDefault();
     clearNoticeState();
-    closeAlertModal();
+    
+    // ไม่ต้อง close modal ที่นี่ เพราะอาจทำให้ modal ที่จะเปิดใหม่หายไป
+    // closeAlertModal(); // ❌ ลบบรรทัดนี้ออก
+    
     if (loading) {
       return;
     }
@@ -246,40 +259,84 @@ export default function Login() {
     } catch (err) {
       console.warn("⚠️ Login failed:", err);
       const raw = String(err?.message || "").toLowerCase();
+      
+      // เพิ่ม debugging
+      console.log('🔍 Error message:', raw);
+      console.log('🔍 Original error:', err?.message);
 
-      if (raw.includes(TEXT.includes.password) || raw.includes("password")) {
+      // รอให้ state update เสร็จก่อนเปิด modal
+      if (raw.includes("รหัสผ่าน") || raw.includes("password")) {
         const message = TEXT.notice.passwordError;
         assignFieldError("password", TEXT.errorField.password);
         setNoticeState({ type: "error", message });
-        openAlertModal({ title: TEXT.alert.failureTitle, message });
+        
+        // ใช้ setTimeout เพื่อให้ state update เสร็จก่อน
+        setTimeout(() => {
+          openAlertModal({ 
+            title: TEXT.alert.passwordTitle, 
+            message,
+            icon: "warning",
+            danger: true 
+          });
+        }, 100);
+        
       } else if (
-        raw.includes(TEXT.includes.userMissing1) ||
-        raw.includes(TEXT.includes.userMissing2) ||
-        raw.includes(TEXT.includes.userMissing3) ||
-        raw.includes("user not found")
+        raw.includes("ไม่พบบัญชีผู้ใช้") ||
+        raw.includes("ไม่พบผู้ใช้") ||
+        raw.includes("user not found") ||
+        raw.includes("username") ||
+        (raw.includes("ไม่พบ") && raw.includes("ผู้ใช้")) ||
+        (raw.includes("ไม่พบ") && raw.includes("บัญชี"))
       ) {
         const message = TEXT.notice.usernameError;
         assignFieldError("username", TEXT.errorField.username);
         setNoticeState({ type: "error", message });
-        openAlertModal({ title: TEXT.alert.failureTitle, message });
+        
+        setTimeout(() => {
+          openAlertModal({ 
+            title: TEXT.alert.usernameTitle, 
+            message,
+            icon: "question",
+            danger: false 
+          });
+        }, 100);
+        
       } else if (raw.includes("network") || raw.includes("failed to fetch")) {
         const message = TEXT.notice.networkError;
         setNoticeState({ type: "error", message });
-        openAlertModal({
-          title: TEXT.alert.networkTitle,
-          message,
-          icon: "question",
-          danger: false,
-        });
+        
+        setTimeout(() => {
+          openAlertModal({
+            title: TEXT.alert.networkTitle,
+            message,
+            icon: "question",
+            danger: false,
+          });
+        }, 100);
+        
       } else {
+        // กรณีอื่นๆ ให้แสดงข้อความ error ที่ได้รับจาก backend
         const message = err?.message || TEXT.notice.fallbackError;
         setNoticeState({ type: "error", message });
-        openAlertModal({ title: TEXT.alert.failureTitle, message });
+        
+        setTimeout(() => {
+          openAlertModal({ 
+            title: TEXT.alert.failureTitle, 
+            message,
+            icon: "warning",
+            danger: true 
+          });
+        }, 100);
       }
     } finally {
       setLoadingState(false);
     }
   };
+
+  // เพิ่ม debugging สำหรับ modal state
+  useEffect(() => {
+    console.log('📊 Modal state changed:', modal);
+  }, [modal]);
 
   useEffect(() => {
     if (!user) {
@@ -412,19 +469,22 @@ export default function Login() {
           <div className={styles.footer}>
             <p className={styles.footerText}>{TEXT.layout.footer}</p>
           </div>
-          <ConfirmModal
-            open={modal.open}
-            title={modal.title || TEXT.alert.defaultTitle}
-            message={modal.message}
-            confirmText={TEXT.alert.confirmText}
-            cancelText={null}
-            icon={modal.icon}
-            danger={modal.danger}
-            onCancel={closeAlertModal}
-            onConfirm={closeAlertModal}
-          />
         </div>
       </div>
+      
+      {/* เพิ่ม key เพื่อ force re-render modal */}
+      <ConfirmModal
+        key={`modal-${modal.open}-${Date.now()}`}
+        open={modal.open}
+        title={modal.title || TEXT.alert.defaultTitle}
+        message={modal.message}
+        confirmText={TEXT.alert.confirmText}
+        cancelText={null}
+        icon={modal.icon}
+        danger={modal.danger}
+        onCancel={closeAlertModal}
+        onConfirm={closeAlertModal}
+      />
     </div>
   );
 }

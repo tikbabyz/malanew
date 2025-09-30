@@ -1,155 +1,158 @@
-import React from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
-import AdminNavigation from "@features/admin/components/AdminNavigation/AdminNavigation.jsx"
-import { ClockWidget } from "@features/admin/components/widgets"
-import styles from './AdminLayout.module.css'
-import { 
-  FaChartLine, 
-  FaSync,
-  FaBars,
-  FaTimes
-} from 'react-icons/fa'
-import dayjs from "dayjs"
-import 'dayjs/locale/th'
+import React from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import AdminNavigation from "@features/admin/components/AdminNavigation/AdminNavigation.jsx";
+import { ClockWidget } from "@features/admin/components/widgets";
+import styles from './AdminLayout.module.css';
+import { FaChartLine, FaSync, FaBars, FaTimes } from 'react-icons/fa';
+import dayjs from 'dayjs';
+import 'dayjs/locale/th';
 
-dayjs.locale('th')
+dayjs.locale('th');
+
+const HEADER_TITLE = {
+  mobile: 'แผงควบคุม',
+  desktop: 'แดชบอร์ดผู้ดูแลระบบ',
+};
+
+const HEADER_SUBTITLE = {
+  mobile: () => `อัปเดตรายวัน · ${dayjs().format('DD MMM YYYY')}`,
+  desktop: () => `ภาพรวมสถานะระบบ · ${dayjs().format('dddd DD MMMM YYYY')}`,
+};
+
+const REFRESH_LABEL = 'รีเฟรชข้อมูลแดชบอร์ด';
+const OPEN_SIDEBAR_LABEL = 'เปิดเมนูผู้ดูแลระบบ';
+const CLOSE_SIDEBAR_LABEL = 'ปิดเมนูผู้ดูแลระบบ';
 
 export default function AdminLayout() {
-  const location = useLocation()
-  
-  // Mobile sidebar state
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false)
-  
-  // Screen size detection
-  const [screenSize, setScreenSize] = React.useState('desktop')
-  
-  // Detect screen size
+  const location = useLocation();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
+  const [screenSize, setScreenSize] = React.useState('desktop');
+
   React.useEffect(() => {
+    const detectBreakpoint = () => {
+      const width = window.innerWidth;
+      if (width < 640) return 'mobile';
+      if (width < 1024) return 'tablet';
+      return 'desktop';
+    };
+
     const handleResize = () => {
-      const width = window.innerWidth
-      if (width < 768) {
-        setScreenSize('mobile')
-        setIsMobileSidebarOpen(false) // Auto-close sidebar on mobile
-      } else if (width < 1024) {
-        setScreenSize('tablet')
-        setIsMobileSidebarOpen(false)
-      } else {
-        setScreenSize('desktop')
-        setIsMobileSidebarOpen(false)
+      const size = detectBreakpoint();
+      setScreenSize(size);
+      if (size !== 'mobile') {
+        setIsMobileSidebarOpen(false);
       }
-    }
-    
-    handleResize() // Initial check
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-  
-  // Close mobile sidebar when route changes
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   React.useEffect(() => {
-    setIsMobileSidebarOpen(false)
-  }, [location.pathname])
-  
-  // Handle mobile sidebar toggle
-  const toggleMobileSidebar = () => {
-    setIsMobileSidebarOpen(!isMobileSidebarOpen)
-  }
-  
-  // Lock scroll when mobile sidebar is open
+    setIsMobileSidebarOpen(false);
+  }, [location.pathname]);
+
   React.useEffect(() => {
-    if (screenSize === 'mobile' && isMobileSidebarOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'auto'
-    }
-    
+    const shouldLockScroll = screenSize === 'mobile' && isMobileSidebarOpen;
+    document.body.style.overflow = shouldLockScroll ? 'hidden' : 'auto';
     return () => {
-      document.body.style.overflow = 'auto'
-    }
-  }, [isMobileSidebarOpen, screenSize])
-  
+      document.body.style.overflow = 'auto';
+    };
+  }, [screenSize, isMobileSidebarOpen]);
+
+  const toggleMobileSidebar = () => {
+    setIsMobileSidebarOpen((prev) => !prev);
+  };
+
+  const titleText = screenSize === 'mobile' ? HEADER_TITLE.mobile : HEADER_TITLE.desktop;
+  const subtitleText = screenSize === 'mobile'
+    ? HEADER_SUBTITLE.mobile()
+    : HEADER_SUBTITLE.desktop();
+
+  const containerClassName = [styles.adminContainer, styles[screenSize]].filter(Boolean).join(' ');
+  const sidebarClassName = [
+    styles.sidebarContainer,
+    screenSize === 'mobile' && isMobileSidebarOpen ? styles.sidebarOpen : '',
+  ].filter(Boolean).join(' ');
+
   return (
-    <div className={`${styles.adminContainer} ${styles[screenSize]}`}>
-      {/* Enhanced Header with Dashboard Widgets */}
-      <div className={styles.adminHeader}>
+    <div className={containerClassName}>
+      <header className={styles.adminHeader}>
         <div className={styles.headerContent}>
           <div className={styles.headerMain}>
-            {/* Mobile Hamburger Menu */}
             {screenSize === 'mobile' && (
-              <button 
+              <button
+                type="button"
                 className={styles.hamburgerButton}
                 onClick={toggleMobileSidebar}
-                aria-label="เปิด/ปิดเมนู"
+                aria-label={isMobileSidebarOpen ? CLOSE_SIDEBAR_LABEL : OPEN_SIDEBAR_LABEL}
+                aria-expanded={isMobileSidebarOpen}
+                aria-controls="admin-sidebar"
               >
                 {isMobileSidebarOpen ? <FaTimes /> : <FaBars />}
               </button>
             )}
-            
+
             <div className={styles.titleSection}>
               <h1 className={styles.adminTitle}>
                 <FaChartLine className={styles.titleIcon} />
-                <span className={styles.titleText}>
-                  {screenSize === 'mobile' ? 'หม่าล่า' : 'ระบบจัดการร้านหม่าล่า'}
-                </span>
+                <span className={styles.titleText}>{titleText}</span>
               </h1>
-              <p className={styles.adminSubtitle}>
-                {screenSize === 'mobile' 
-                  ? `Admin • ${dayjs().format("DD/MM/YYYY")}`
-                  : `ยินดีต้อนรับ, Admin • ${dayjs().format("dddd, DD MMMM YYYY")}`
-                }
-              </p>
+              <p className={styles.adminSubtitle}>{subtitleText}</p>
             </div>
           </div>
-          
-          {/* Header Widgets - Hidden on Mobile */}
+
           {screenSize !== 'mobile' && (
-            <div className={styles.headerWidgets}>
-              <ClockWidget />
-            </div>
-          )}
-          
-          {/* Header Actions */}
-          {screenSize !== 'mobile' && (
-            <div className={styles.headerActions}>
-              <button className={styles.actionButton} title="รีเฟรชข้อมูล">
-                <FaSync />
-              </button>
+            <div className={styles.headerExtras}>
+              <div className={styles.headerWidgets}>
+                <ClockWidget />
+              </div>
+              <div className={styles.headerActions}>
+                <button
+                  type="button"
+                  className={styles.actionButton}
+                  title={REFRESH_LABEL}
+                  aria-label={REFRESH_LABEL}
+                >
+                  <FaSync />
+                </button>
+              </div>
             </div>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Breadcrumb - Hidden on Mobile */}
       {screenSize !== 'mobile' && (
         <div className={styles.breadcrumbSection}>
           <AdminNavigation variant="breadcrumb" />
         </div>
       )}
-      
-      {/* Main Layout */}
+
       <div className={styles.adminLayout}>
-        {/* Mobile Sidebar Overlay */}
         {screenSize === 'mobile' && isMobileSidebarOpen && (
-          <div 
+          <button
+            type="button"
             className={styles.sidebarOverlay}
             onClick={() => setIsMobileSidebarOpen(false)}
-            aria-label="ปิดเมนู"
+            aria-label={CLOSE_SIDEBAR_LABEL}
           />
         )}
-        
-        {/* Sidebar Navigation */}
-        <div className={`${styles.sidebarContainer} ${
-          screenSize === 'mobile' && isMobileSidebarOpen ? styles.sidebarOpen : ''
-        }`}>
-          <AdminNavigation 
-            variant="sidebar" 
+
+        <aside
+          id="admin-sidebar"
+          className={sidebarClassName}
+          aria-hidden={screenSize === 'mobile' ? !isMobileSidebarOpen : undefined}
+        >
+          <AdminNavigation
+            variant="sidebar"
             showDescriptions={screenSize === 'desktop'}
             isCompact={screenSize === 'tablet'}
             isMobile={screenSize === 'mobile'}
             className={styles.navigationSidebar}
           />
-        </div>
-        
-        {/* Main Content */}
+        </aside>
+
         <main className={styles.adminContent}>
           <div className={styles.contentWrapper}>
             <Outlet />
@@ -157,17 +160,5 @@ export default function AdminLayout() {
         </main>
       </div>
     </div>
-  )
-}
-
-// ตัวอย่างในทุกหน้า
-export function SomePage() {
-  return (
-    <div className="pageBg">
-      <div className={styles.container}>
-        {/* ...content... */}
-      </div>
-    </div>
   );
 }
-

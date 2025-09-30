@@ -1,110 +1,124 @@
-// AdminNavigation.jsx - Modern Navigation Component for Admin Section
 import React from 'react';
 import { Link, NavLink, useLocation, matchPath } from 'react-router-dom';
-
-import { 
-  FaTachometerAlt, 
-  FaBoxOpen, 
-  FaUsers, 
-  FaTags, 
+import {
+  FaTachometerAlt,
+  FaBoxOpen,
+  FaUsers,
+  FaTags,
   FaClipboardList,
   FaChevronRight,
-  FaBell,
-  FaCog
+  FaCog,
 } from 'react-icons/fa';
 import styles from './AdminNavigation.module.css';
 import usePermissions from "@shared/hooks/usePermissions.js";
 
 const ADMIN_MENU_ITEMS = [
-  { 
-    to: '/admin', 
-    label: 'แดชบอร์ด', 
+  {
+    to: '/admin',
+    label: 'แดชบอร์ด',
     icon: FaTachometerAlt,
-    description: 'ภาพรวมและสถิติ',
-    permission: null // ทุกคนเข้าได้
+    description: 'ภาพรวมยอดขาย คำสั่งซื้อ และสถานะระบบล่าสุด',
+    permission: null,
   },
-  { 
-    to: '/admin/users', 
-    label: 'จัดการผู้ใช้', 
+  {
+    to: '/admin/users',
+    label: 'จัดการผู้ใช้',
     icon: FaUsers,
-    description: 'ผู้ใช้งานและสิทธิ์',
-    permission: 'users'
+    description: 'เพิ่ม ปรับสิทธิ์ และติดตามการใช้งานของทีมงาน',
+    permission: 'users',
   },
-  { 
-    to: '/admin/products', 
-    label: 'จัดการสินค้า', 
+  {
+    to: '/admin/products',
+    label: 'เมนูสินค้า',
     icon: FaBoxOpen,
-    description: 'สินค้าและราคา',
-    permission: 'products'
+    description: 'อัปเดตราคา สต็อก และรายละเอียดสินค้าได้ง่าย',
+    permission: 'products',
   },
-  { 
-    to: '/admin/payments', 
-    label: 'การชำระเงิน', 
+  {
+    to: '/admin/payments',
+    label: 'การชำระเงิน',
     icon: FaClipboardList,
-    description: 'รายการชำระเงิน',
-    permission: 'payments'
+    description: 'ติดตามสถานะการจ่ายเงิน การคืนเงิน และโปรโมชั่น',
+    permission: 'payments',
   },
-  { 
-    to: '/admin/announcements', 
-    label: 'ประกาศ', 
+  {
+    to: '/admin/announcements',
+    label: 'ประกาศร้าน',
     icon: FaTags,
-    description: 'ข่าวสารและโปรโมชั่น',
-    permission: 'announcements'
+    description: 'สร้างและจัดการประกาศสำหรับพนักงานและลูกค้า',
+    permission: 'announcements',
   },
-  { 
-    to: '/admin/permissions', 
-    label: 'สิทธิ์การใช้งาน', 
+  {
+    to: '/admin/permissions',
+    label: 'สิทธิ์การใช้งาน',
     icon: FaCog,
-    description: 'จัดการสิทธิ์',
-    permission: 'users'
-  }
+    description: 'กำหนดและควบคุมสิทธิ์การเข้าถึงในแต่ละบทบาท',
+    permission: 'users',
+  },
 ];
 
-export default function AdminNavigation({ 
-  variant = 'sidebar', // 'sidebar', 'horizontal', 'compact'
+const BREADCRUMB_HOME = 'หน้าแรก';
+const BREADCRUMB_ROOT = 'แดชบอร์ด';
+
+export default function AdminNavigation({
+  variant = 'sidebar',
   showDescriptions = true,
   isCompact = false,
   isMobile = false,
-  className = ''
+  className = '',
 }) {
   const location = useLocation();
   const { hasPermission } = usePermissions();
   const [hoverId, setHoverId] = React.useState(null);
-  // Filter menu items based on permissions
- const visibleMenuItems = React.useMemo(
-   () => ADMIN_MENU_ITEMS.filter(item => !item.permission || hasPermission(item.permission)),
-   [hasPermission]
- );
 
- const isActive = (to) => {
-   if (to === '/admin') {
-     return !!matchPath({ path: '/admin', end: true }, location.pathname);
-   }
-   // ให้ active กับเส้นทางย่อยทั้งหมดของเมนูนั้น
-   return !!matchPath({ path: `${to}/*`, end: false }, location.pathname);
- };
+  const visibleMenuItems = React.useMemo(
+    () => ADMIN_MENU_ITEMS.filter((item) => !item.permission || hasPermission(item.permission)),
+    [hasPermission]
+  );
 
- const getBreadcrumb = () => {
-   const current = visibleMenuItems.find(item =>
-     item.to === '/admin'
-       ? matchPath({ path: '/admin', end: true }, location.pathname)
-       : matchPath({ path: `${item.to}/*`, end: false }, location.pathname)
-   );
-   return current ? current.label : 'Admin';
- };
+  const isActive = React.useCallback(
+    (to) => {
+      if (to === '/admin') {
+        return !!matchPath({ path: '/admin', end: true }, location.pathname);
+      }
+      return !!matchPath({ path: `${to}/*`, end: false }, location.pathname);
+    },
+    [location.pathname]
+  );
 
-  const handleTooltipShow = (itemId) => isCompact && setHoverId(itemId);
- const handleTooltipHide = () => isCompact && setHoverId(null);
+  const currentBreadcrumb = React.useMemo(() => {
+    const current = visibleMenuItems.find((item) =>
+      item.to === '/admin'
+        ? matchPath({ path: '/admin', end: true }, location.pathname)
+        : matchPath({ path: `${item.to}/*`, end: false }, location.pathname)
+    );
+    return current ? current.label : BREADCRUMB_ROOT;
+  }, [location.pathname, visibleMenuItems]);
+
+  const handleTooltipShow = React.useCallback(
+    (itemId) => {
+      if (isCompact) {
+        setHoverId(itemId);
+      }
+    },
+    [isCompact]
+  );
+
+  const handleTooltipHide = React.useCallback(() => {
+    if (isCompact) {
+      setHoverId(null);
+    }
+  }, [isCompact]);
 
   if (variant === 'breadcrumb') {
     return (
-      <div className={`${styles.breadcrumb} ${className}`}>
-        <span className={styles.breadcrumbHome}>🏠</span>
+      <div className={`${styles.breadcrumb} ${className}`} aria-label="เส้นทางการนำทาง">
+        <span className={styles.breadcrumbHome}>{BREADCRUMB_HOME}</span>
         <FaChevronRight className={styles.breadcrumbSeparator} />
-        <span className={styles.breadcrumbText}>Admin</span>
+        <span className={styles.breadcrumbText}>{BREADCRUMB_ROOT}</span>
         <FaChevronRight className={styles.breadcrumbSeparator} />
         <span className={`${styles.breadcrumbText} ${styles.breadcrumbActive}`}>
-          {getBreadcrumb()}
+          {currentBreadcrumb}
         </span>
       </div>
     );
@@ -112,23 +126,19 @@ export default function AdminNavigation({
 
   if (variant === 'horizontal') {
     return (
-      <nav className={`${styles.horizontalNav} ${className}`}>
+      <nav className={`${styles.horizontalNav} ${className}`} aria-label="เมนูผู้ดูแลแบบแนวนอน">
         <div className={styles.navScrollContainer}>
           {visibleMenuItems.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.to);
-            
             return (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) => `${styles.horizontalLink} ${isActive ? styles.active : ''}`}
                 title={item.description}
-                aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
               >
                 <Icon className={styles.linkIcon} />
                 <span className={styles.linkText}>{item.label}</span>
-               aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
               </NavLink>
             );
           })}
@@ -137,20 +147,19 @@ export default function AdminNavigation({
     );
   }
 
-  // Default sidebar variant
   return (
-   <nav
-   className={`${styles.sidebar} ${isCompact ? styles.compact : ''} ${isMobile ? styles.mobile : ''} ${className}`}
-   role="navigation"
-   aria-label="Admin navigation"
->
+    <nav
+      className={`${styles.sidebar} ${isCompact ? styles.compact : ''} ${isMobile ? styles.mobile : ''} ${className}`.trim()}
+      role="navigation"
+      aria-label="เมนูผู้ดูแลระบบ"
+    >
       <div className={styles.sidebarHeader}>
         <div className={styles.adminBrand}>
-          <div className={styles.brandIcon}>⚙️</div>
+          <div className={styles.brandIcon}>MA</div>
           {(!isCompact || isMobile) && (
             <div className={styles.brandText}>
-              <span className={styles.brandTitle}>ผู้ดูแลระบบ</span>
-              <span className={styles.brandSubtitle}>Mala Admin</span>
+              <span className={styles.brandTitle}>Mala Admin</span>
+              <span className={styles.brandSubtitle}>ศูนย์ควบคุมร้านอาหาร</span>
             </div>
           )}
         </div>
@@ -158,24 +167,25 @@ export default function AdminNavigation({
 
       <div className={styles.navSection}>
         {(!isCompact || isMobile) && (
-          <div className={styles.sectionTitle}>เมนูหลัก</div>
+          <div className={styles.sectionTitle}>เมนูจัดการ</div>
         )}
         <div className={styles.navItems}>
           {visibleMenuItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.to);
-            
+
             return (
-              <div 
+              <div
                 key={item.to}
                 className={styles.navItemWrapper}
                 onMouseEnter={() => handleTooltipShow(item.to)}
-                onMouseLeave={() => handleTooltipHide(item.to)}
+                onMouseLeave={handleTooltipHide}
               >
                 <Link
                   to={item.to}
                   className={`${styles.navLink} ${active ? styles.active : ''}`}
                   title={item.description}
+                  aria-current={active ? 'page' : undefined}
                 >
                   <div className={styles.linkIconContainer}>
                     <Icon className={styles.linkIcon} />
@@ -190,10 +200,9 @@ export default function AdminNavigation({
                   )}
                   {active && <div className={styles.activeIndicator} />}
                 </Link>
-                
-                {/* Tooltip for compact mode */}
+
                 {isCompact && !isMobile && hoverId === item.to && (
-                  <div className={styles.tooltip}>
+                  <div className={styles.tooltip} role="tooltip">
                     <div className={styles.tooltipContent}>
                       <strong>{item.label}</strong>
                       <span>{item.description}</span>
@@ -209,5 +218,4 @@ export default function AdminNavigation({
   );
 }
 
-// Export menu items for use in other components
 export { ADMIN_MENU_ITEMS };

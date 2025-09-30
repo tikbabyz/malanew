@@ -96,6 +96,12 @@
   min-width: 0;
 }
 
+.headerExtras {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
 .titleSection {
   min-width: 0;
 }
@@ -223,6 +229,14 @@
   z-index: 199;
   opacity: 0;
   animation: fadeIn 0.3s ease forwards;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.sidebarOverlay:focus {
+  outline: none;
 }
 
 @keyframes fadeIn {
