@@ -1,31 +1,18 @@
 # Mala AI Backend
 
 ## TL;DR
-- Flask + SQLAlchemy backend ที่ให้บริการ REST API และ YOLOv11 inference สำหรับระบบร้านหมาล่า
-- ใช้ MySQL เป็นฐานข้อมูลหลัก และจัดการสื่อ (ใบสลิป, QR, รูปสินค้า) ในโฟลเดอร์ `uploads/`
-- ตั้งค่า virtualenv, ติดตั้ง dependencies (`pip install -r requirements.txt`), กำหนด `.env`, แล้วรัน `python server.py`
+- Flask + SQLAlchemy REST API with YOLOv11 inference for the Mala Restaurant platform.
+- Persists data in MySQL, stores media under `uploads/`, and loads YOLO weights from `models/`.
+- Create a virtualenv, install dependencies (`pip install -r requirements.txt`), configure `.env`, then run `python server.py` or Gunicorn.
 
 ## Overview
-The backend powers every data & AI interaction for the Mala Restaurant platform. It exposes a REST API for:
-
-- **Authentication** & role/permission management
-- **Product / Announcement / Payment** CRUD endpoints consumed by the React admin console
-- **Image uploads** (QR code, product imagery, payment slips)
-- **YOLOv11-based colour detection** with configurable ROI and HSV tuning
-
-The service is organised as a Flask application factory (`app:create_app`) with blueprints split by resource domain.
-
-### Core stack
-- Flask 3, Flask-CORS, Flask-SQLAlchemy, Flask-Migrate
-- MySQL (via PyMySQL) for persistence
-- Torch 2.8 + Ultralytics for YOLOv11 inference
-- Pillow / OpenCV for image post-processing
+This project is the backend that serves every data and AI workflow for Mala Restaurant. It ships as a Flask application factory (`app:create_app`) with modular blueprints for authentication, users, products, announcements, payments, uploads, and AI detection. Torch + Ultralytics deliver YOLOv11 colour detection, while Pillow/OpenCV handle post-processing.
 
 ## Requirements
-- Python **3.10 หรือใหม่กว่า** (ทดสอบกับ 3.13)
-- MySQL 8+ พร้อมฐานข้อมูลว่างสำหรับโปรเจ็กต์นี้
-- ระบบที่รองรับ Torch + Ultralytics (CPU build ที่ระบุใน `requirements.txt`)
-- (แนะนำ) `virtualenv` หรือ `conda`
+- Python **3.10 or newer** (tested with 3.13)
+- MySQL 8+ with an empty schema and user credentials
+- Ability to install PyTorch CPU wheels (as listed in `requirements.txt`)
+- Optional: `virtualenv` or Conda for isolation
 
 ## Setup
 ```bash
@@ -40,11 +27,11 @@ pip install -r requirements.txt
 ```
 
 ### Environment configuration
-สร้างไฟล์ `.env` (อยู่ระดับเดียวกับ `server.py`) แล้วใส่ค่าตัวอย่างด้านล่าง:
+Create `.env` alongside `server.py` and populate values like the sample below:
 ```ini
 # Database
 DATABASE_URL=mysql+pymysql://root:password@localhost:3306/mala_restaurant
-SECRET_KEY=change-this-in-prod
+SECRET_KEY=change-this-in-production
 
 # YOLO model
 MALA_MODEL_PATH=models/best.pt
@@ -57,88 +44,184 @@ MALA_COLOR_OVERRIDE_MIN=0.60
 MALA_MODEL_TRUST=0.62
 MALA_RESPECT_USER_ROI=1
 
-# Bootstrap database (สร้างตาราง + seed ข้อมูลตัวอย่าง)
+# Bootstrap database and seed defaults
 AUTO_CREATE_DB=1
 SEED_ADMIN=1
 
-# Server port override (ถ้าไม่กำหนดจะใช้ 8000)
-MALA_PORT=8000
+# Override dev port (defaults to 8000)
+MALA_PORT=8000\n\n# Optional TLS (for managed MySQL that enforces SSL)\n# MYSQL_SSL_CA=/path/to/server-ca.pem\n# MYSQL_SSL_CERT=/path/to/client-cert.pem\n# MYSQL_SSL_KEY=/path/to/client-key.pem\n
 ```
-> ใส่ไฟล์โมเดล (เช่น `best.pt`) ไว้ในโฟลเดอร์ `models/` หรือแก้ `MALA_MODEL_PATH`
+Ensure the YOLO checkpoint (`best.pt`) exists at the configured path.
 
 ### Database migrations
-ติดตั้ง Flask CLI และสร้างตารางด้วยคำสั่งต่อไปนี้ (ครั้งแรกเท่านั้น):
 ```bash
-# ตั้งค่าให้ Flask CLI รู้จัก factory
+# Tell Flask CLI which factory to use
 $env:FLASK_APP = "app:create_app"      # PowerShell
 # export FLASK_APP=app:create_app      # Bash/Zsh
 
 flask db upgrade
 ```
-ถ้ากำหนด `AUTO_CREATE_DB=1` ระบบจะเรียก `db.create_all()` ให้อัตโนมัติอยู่แล้ว แต่การใช้ migration จะปลอดภัยกว่าสำหรับ production
+`AUTO_CREATE_DB=1` triggers `db.create_all()` on start, but running migrations is recommended once you go beyond prototyping.
 
 ### Seeding sample data
-เปิดใช้งาน `AUTO_CREATE_DB=1` และ `SEED_ADMIN=1` ใน `.env` แล้วสตาร์ทเซิร์ฟเวอร์หนึ่งครั้ง ระบบจะสร้าง:
-- Admin (`admin` / `admin123`)
-- Staff (`staff` / `123456`)
-- Colour price presets, default announcements และค่า QR เริ่มต้น
+With `AUTO_CREATE_DB=1` and `SEED_ADMIN=1`, the first successful start seeds:
+- Admin account `admin / admin123`
+- Staff account `staff / 123456`
+- Colour price presets, default announcements, blank payment settings
 
 ## Running the server
 ```bash
-# Dev (debug=True, auto reload)
+# Development (debug=True, auto reload)
 python server.py
 
-# Production style (Gunicorn)
-venv\Scripts\activate  # หรือ source venv/bin/activate
+# Production-style (Gunicorn)
+source venv/bin/activate
 pip install gunicorn
 HTTP_WORKERS=2 gunicorn "app:create_app()" -b 0.0.0.0:8000
 ```
-> เมื่อสตาร์ทสำเร็จ API จะพร้อมใช้งานที่ `http://127.0.0.1:8000`
+The API is available at `http://127.0.0.1:8000` when the service is healthy.
 
-## API surface (หลัก)
-| Method | Path | Description |
+## API surface (selected)
+| Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/api/health` | Health check (status + model info) |
-| POST | `/api/login` | Username/password authentication (plain or sha256: hash) |
-| GET | `/api/users` | รายชื่อผู้ใช้ (admin only) |
-| POST | `/api/users` | สร้างผู้ใช้ใหม่ |
-| PUT/DELETE | `/api/users/<id>` | ปรับปรุง / ลบ ผู้ใช้ |
-| GET/POST | `/api/products` | CRUD ข้อมูลสินค้า + ค่าสี |
-| GET/POST | `/api/payments/settings` | อ่าน/บันทึกค่า QR และข้อมูลโอน |
-| GET/POST | `/api/announcements` | จัดการประกาศ |
-| POST | `/api/detect` | อัปโหลดภาพ (`multipart/form-data` ช่อง `image`) เพื่อรัน YOLO + คืน bounding box |
-| POST | `/api/upload/image` | อัปโหลดรูปสินค้า (multipart) |
-| GET | `/api/qr/images/<filename>` | ดึงรูป QR code |
+| GET | `/api/health` | Health & model status check |
+| POST | `/api/login` | Username/password authentication (plain or `sha256:` hash) |
+| GET | `/api/users` | List users (admin only) |
+| POST | `/api/users` | Create user |
+| PUT/DELETE | `/api/users/<id>` | Update / delete user |
+| GET/POST | `/api/products` | Product & colour price CRUD |
+| GET/POST | `/api/payments/settings` | Payment QR/settings CRUD |
+| GET/POST | `/api/announcements` | Announcement CRUD |
+| POST | `/api/detect` | Multipart image upload for YOLO detection |
+| POST | `/api/upload/image` | Upload product image |
+| GET | `/api/qr/images/<filename>` | Serve stored QR images |
 
-Blueprints อยู่ใน `app/routes/` หากต้องการดูรายละเอียด payload ที่คาดหวัง
+Routes live in `app/routes/` if you need payload details.
 
-## File storage
-- รูปสินค้า: `uploads/products/`
-- รูปสลิป: `uploads/slips/`
-- รูป QR: `uploads/qr_codes/`
-
-โฟลเดอร์จะถูกสร้างอัตโนมัติเมื่อเรียก `create_app()` (ดู `app/utils.py`)
+## File storage layout
+- Product images â†’ `uploads/products/`
+- Payment slips â†’ `uploads/slips/`
+- QR codes â†’ `uploads/qr_codes/`
+These directories are created automatically by `create_app()` if missing.
 
 ## Troubleshooting
-- **Torch ติดตั้งไม่สำเร็จ**: ใช้ Python 64-bit และอัปเดต `pip`; บน Windows บางครั้งต้องติดตั้ง Visual C++ Build Tools
-- **MySQL connection refused**: ตรวจสอบ `DATABASE_URL`, สิทธิ์ของ user, และเปิด `mysqld --skip-name-resolve`
-- **CORS ปัญหา**: ปรับ origin ที่อนุญาตใน `app/__init__.py`
-- **โมเดลหาไม่เจอ**: ยืนยัน path ใน `MALA_MODEL_PATH` และสิทธิ์อ่านไฟล์ `.pt`
+- **Torch install fails** â†’ ensure 64-bit Python and up-to-date `pip`; Windows users may need Visual C++ Build Tools.
+- **MySQL connection refused** â†’ validate `DATABASE_URL`, user grants, and that MySQL allows remote/local connections.
+- **CORS errors** â†’ update allowed origins in `app/__init__.py`.
+- **Model not loading** â†’ confirm `MALA_MODEL_PATH` and file permissions.
 
 ## Useful commands
 ```bash
-# รัน health check test ด้วย curl
 curl http://127.0.0.1:8000/api/health
-
-# ตรวจสอบผู้ใช้ทั้งหมด (debug endpoint)
 curl http://127.0.0.1:8000/api/users/debug
-
-# อัปโหลดรูปทดสอบ YOLO
-test-img.png
-curl -F "image=@test-img.png" http://127.0.0.1:8000/api/detect
+curl -F "image=@test.png" http://127.0.0.1:8000/api/detect
 ```
 
 ## Contributing
-- ใช้ Black/PEP8 เป็นแนวทางจัด format (ยังไม่รวมไว้ใน requirements)
-- แยก logic ใหม่เป็นโมดูลใน `app/routes/` หรือ `app/services/` ก่อนเชื่อม blueprint
-- ถ้าเพิ่มคอลัมน์ในโมเดล อย่าลืมสร้าง migration `flask db migrate -m "describe change"` และ `flask db upgrade`
+- Follow Black/PEP8 style (formatter not bundled yet)
+- Add new logic under `app/routes/` or dedicated services before registering blueprints
+- When altering models: `flask db migrate -m "describe change"` then `flask db upgrade`
+
+## Deployment (Production Guide)
+The steps below target Ubuntu 22.04 LTS + systemd. Adjust as needed.
+
+1. **Provision host prerequisites**
+   - `sudo apt update && sudo apt install python3.11 python3.11-venv python3-pip mysql-client nginx git`
+   - (Optional) `sudo adduser --system --group mala`
+   - Ensure MySQL is reachable and database privileges are prepared.
+
+2. **Clone the repository**
+```bash
+sudo mkdir -p /opt/mala && sudo chown mala:mala /opt/mala
+sudo -u mala git clone https://<your-repo>/mala-backend-ai.git /opt/mala/backend
+cd /opt/mala/backend
+```
+
+3. **Create the virtual environment & install dependencies**
+```bash
+sudo -u mala python3.11 -m venv .venv
+sudo -u mala bash -c 'source .venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt'
+```
+
+4. **Configure environment variables**
+   - Add `/opt/mala/backend/.env` (or copy a template) with the values described earlier.
+   - Place the YOLO weights at the path referenced by `MALA_MODEL_PATH`.
+
+5. **Run database migrations & (optionally) seed**
+```bash
+sudo -u mala bash -c 'source .venv/bin/activate && export FLASK_APP=app:create_app && flask db upgrade'
+# AUTO_CREATE_DB=1 and SEED_ADMIN=1 will seed on the first boot
+```
+
+6. **Prepare upload directories**
+```bash
+sudo -u mala mkdir -p uploads/{products,slips,qr_codes}
+```
+
+7. **Create a systemd unit**
+`/etc/systemd/system/mala-backend.service`:
+```ini
+[Unit]
+Description=Mala Restaurant Backend
+After=network.target mysql.service
+
+[Service]
+User=mala
+Group=mala
+WorkingDirectory=/opt/mala/backend
+Environment="PYTHONUNBUFFERED=1"
+EnvironmentFile=/opt/mala/backend/.env
+ExecStart=/opt/mala/backend/.venv/bin/gunicorn "app:create_app()" \
+          --bind 0.0.0.0:8000 \
+          --workers 2 \
+          --timeout 120
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+Then enable and start the service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now mala-backend
+sudo systemctl status mala-backend
+```
+
+8. **Reverse proxy with Nginx (optional)**
+`/etc/nginx/sites-available/mala-backend`:
+```nginx
+server {
+    listen 80;
+    server_name mala.example.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    client_max_body_size 16m;
+}
+```
+Enable the site and reload:
+```bash
+sudo ln -s /etc/nginx/sites-available/mala-backend /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+9. **Log rotation**
+Systemd journals logs by default. For flat files, add `--access-logfile` / `--error-logfile` to Gunicorn or rely on `journalctl -u mala-backend`.
+
+10. **Zero-downtime updates**
+```bash
+cd /opt/mala/backend
+sudo -u mala git pull
+sudo -u mala bash -c 'source .venv/bin/activate && pip install -r requirements.txt'
+sudo -u mala bash -c 'source .venv/bin/activate && export FLASK_APP=app:create_app && flask db upgrade'
+sudo systemctl restart mala-backend
+```
+
+> Tip: secure public traffic with HTTPS via Letâ€™s Encrypt (`certbot --nginx`).

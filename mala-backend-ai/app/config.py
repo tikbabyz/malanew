@@ -6,6 +6,16 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+def _resolve_ssl_path(value):
+    """Resolve SSL file paths relative to BASE_DIR when needed."""
+    if not value:
+        return None
+    candidate = Path(value)
+    if candidate.is_absolute():
+        return str(candidate)
+    return str((BASE_DIR / candidate).resolve())
+
+
 class Config:
     # Database
     SQLALCHEMY_DATABASE_URI = os.getenv(
@@ -13,14 +23,35 @@ class Config:
         "mysql+pymysql://root:password@localhost:3306/mala_restaurant"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    _CONNECT_ARGS = {
+        'charset': 'utf8mb4',
+    }
+
+    _SSL_ARGS = {}
+    _SSL_CA = _resolve_ssl_path(os.getenv('MYSQL_SSL_CA'))
+    _SSL_CERT = _resolve_ssl_path(os.getenv('MYSQL_SSL_CERT'))
+    _SSL_KEY = _resolve_ssl_path(os.getenv('MYSQL_SSL_KEY'))
+
+    if _SSL_CA:
+        _SSL_ARGS['ca'] = _SSL_CA
+    if _SSL_CERT:
+        _SSL_ARGS['cert'] = _SSL_CERT
+    if _SSL_KEY:
+        _SSL_ARGS['key'] = _SSL_KEY
+
+    _SSL_DISABLED = os.getenv('MYSQL_SSL_DISABLE', '0') in {'1', 'true', 'TRUE'}
+    if not _SSL_DISABLED:
+        if _SSL_ARGS:
+            _CONNECT_ARGS['ssl'] = _SSL_ARGS
+        else:
+            _CONNECT_ARGS['ssl'] = {}
+
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
         'pool_recycle': 3600,
-        'connect_args': {
-            'charset': 'utf8mb4'
-        }
+        'connect_args': _CONNECT_ARGS,
     }
-    
     # Security
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
