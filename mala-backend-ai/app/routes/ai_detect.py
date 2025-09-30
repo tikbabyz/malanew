@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from flask import Blueprint, current_app, jsonify, request
 
 
-ai_bp = Blueprint("ai", __name__)
+ai_bp = Blueprint("ai", __name__, url_prefix="/api")
 
 ALIASES = {
     "แดง": "red",
@@ -432,7 +432,6 @@ def health():
 
 
 @ai_bp.post("/detect")
-@ai_bp.post("/api/detect")
 def detect():
     ctx = build_context()
     missing = _missing_components(ctx)
