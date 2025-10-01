@@ -372,7 +372,7 @@ export default function WorkflowPOS() {
     
     // ตรวจสอบ stock ก่อนเพิ่มสินค้า
     if ((p.stock || 0) <= 0) {
-      alert(`สินค้า "${p.name}" หมดสต็อกแล้ว ไม่สามารถเพิ่มได้`);
+      console.log(`สินค้า "${p.name}" หมดสต็อกแล้ว ไม่สามารถเพิ่มได้`);
       return;
     }
     
@@ -387,7 +387,7 @@ export default function WorkflowPOS() {
         
         // ตรวจสอบว่าจำนวนใหม่ไม่เกิน stock
         if (newQty > (p.stock || 0)) {
-          alert(`สินค้า "${p.name}" มีสต็อกเหลือเพียง ${p.stock} ชิ้น`);
+          console.log(`สินค้า "${p.name}" มีสต็อกเหลือเพียง ${p.stock} ชิ้น`);
           return prev;
         }
         
@@ -630,11 +630,9 @@ export default function WorkflowPOS() {
     const byteArray = new Uint8Array(byteNumbers);
     const blob = new Blob([byteArray], { type: 'image/jpeg' });
     
-    alert(`📸 ถ่ายรูปแล้ว ขนาด: ${(blob.size / 1024).toFixed(2)} KB (${finalWidth}x${finalHeight})`);
     
     // ถ้าไฟล์ยังใหญ่เกิน 50KB ให้ลดขนาดอีก
     if (blob.size > 50 * 1024) {
-      alert('⚠️ รูปยังใหญ่เกินไป กำลังลดขนาดเพิ่มเติม...');
       
       // ลดขนาดเป็น 200x200 และ quality 5%
       canvas.width = 200;
@@ -650,7 +648,6 @@ export default function WorkflowPOS() {
       const smallerByteArray = new Uint8Array(smallerByteNumbers);
       const smallerBlob = new Blob([smallerByteArray], { type: 'image/jpeg' });
       
-      alert(`📸 ลดขนาดเสร็จแล้ว: ${(smallerBlob.size / 1024).toFixed(2)} KB (200x200)`);
       
       const capturedFile = new File([smallerBlob], `camera-capture-${Date.now()}.jpg`, {
         type: 'image/jpeg',
@@ -729,16 +726,13 @@ export default function WorkflowPOS() {
     
     try {
       // เช็ค API connection ก่อน
-      alert('🔗 กำลังเช็คการเชื่อมต่อ Backend...');
       const healthCheck = await fetch(`${API_PREFIX}/health`);
       
       if (!healthCheck.ok) {
         throw new Error(`Backend server ไม่พร้อมใช้งาน (${healthCheck.status})`);
       }
       
-      alert(`🚀 กำลังส่งรูปไป detect (ขนาด: ${(file.size / 1024).toFixed(2)} KB)...`);
       const res = await API.detectImage(file);
-      alert('✅ Detect สำเร็จ!');
       setResult(res);
     } catch (err) {
       let errorMessage = 'เกิดข้อผิดพลาดในการตรวจจับภาพ';
