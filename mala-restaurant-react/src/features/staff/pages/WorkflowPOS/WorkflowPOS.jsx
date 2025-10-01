@@ -482,41 +482,71 @@ export default function WorkflowPOS() {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
     
-    canvas.toBlob((blob) => {
-      if (blob) {
+    // ใช้ dataURL แทน blob เพื่อให้แน่ใจว่าได้ไฟล์ที่ถูกต้อง
+    const dataURL = canvas.toDataURL('image/jpeg', 0.6); // quality 60%
+    
+    // แปลง dataURL เป็น blob
+    fetch(dataURL)
+      .then(res => res.blob())
+      .then(blob => {
         console.log('📸 Captured photo size:', (blob.size / 1024).toFixed(2), 'KB');
         console.log('📸 Captured photo dimensions:', videoWidth, 'x', videoHeight);
+        console.log('📸 Blob type:', blob.type);
         
-        // ถ้าไฟล์ยังใหญ่เกิน 200KB ให้ลด quality อีก
-        if (blob.size > 200 * 1024) {
-          console.log('⚠️ File still too large, reducing quality...');
-          canvas.toBlob((smallerBlob) => {
-            if (smallerBlob) {
+        // ถ้าไฟล์ยังใหญ่เกิน 150KB ให้ลด quality อีก
+        if (blob.size > 150 * 1024) {
+          console.log('⚠️ File too large, reducing quality more...');
+          const smallerDataURL = canvas.toDataURL('image/jpeg', 0.3); // quality 30%
+          
+          fetch(smallerDataURL)
+            .then(res => res.blob())
+            .then(smallerBlob => {
               console.log('📸 Reduced photo size:', (smallerBlob.size / 1024).toFixed(2), 'KB');
+              
               const capturedFile = new File([smallerBlob], `camera-capture-${Date.now()}.jpg`, {
-                type: 'image/jpeg'
+                type: 'image/jpeg',
+                lastModified: Date.now()
               });
               
-              setFile(capturedFile);
-              setPreview(URL.createObjectURL(capturedFile));
-              setResult(null);
-              setError("");
-              stopCamera();
-            }
-          }, 'image/jpeg', 0.5); // quality ต่ำมาก
+              // Validate file before setting
+              if (capturedFile.size > 0 && capturedFile.type === 'image/jpeg') {
+                setFile(capturedFile);
+                setPreview(URL.createObjectURL(capturedFile));
+                setResult(null);
+                setError("");
+                stopCamera();
+              } else {
+                console.error('❌ Invalid file created');
+                setError('เกิดข้อผิดพลาดในการสร้างไฟล์รูปภาพ');
+              }
+            })
+            .catch(err => {
+              console.error('❌ Error creating smaller file:', err);
+              setError('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
+            });
         } else {
           const capturedFile = new File([blob], `camera-capture-${Date.now()}.jpg`, {
-            type: 'image/jpeg'
+            type: 'image/jpeg',
+            lastModified: Date.now()
           });
           
-          setFile(capturedFile);
-          setPreview(URL.createObjectURL(capturedFile));
-          setResult(null);
-          setError("");
-          stopCamera();
+          // Validate file before setting
+          if (capturedFile.size > 0 && capturedFile.type === 'image/jpeg') {
+            setFile(capturedFile);
+            setPreview(URL.createObjectURL(capturedFile));
+            setResult(null);
+            setError("");
+            stopCamera();
+          } else {
+            console.error('❌ Invalid file created');
+            setError('เกิดข้อผิดพลาดในการสร้างไฟล์รูปภาพ');
+          }
         }
-      }
-    }, 'image/jpeg', 0.7); // ลด quality เป็น 0.7
+      })
+      .catch(err => {
+        console.error('❌ Error creating file from canvas:', err);
+        setError('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
+      });
   };
 
   // Detection Functions
@@ -582,13 +612,13 @@ export default function WorkflowPOS() {
       }
       
       alert(`❌ เกิดข้อผิดพลาด: ${errorMessage}`);
-      alert('Error details:', {
+      alert(`Error details: ${JSON.stringify({
         message: err.message,
         name: err.name,
         stack: err.stack,
         fileSize: file.size,
         fileName: file.name
-      });
+      }, null, 2)}`);
       
       setError(errorMessage);
     } finally {

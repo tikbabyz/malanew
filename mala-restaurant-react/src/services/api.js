@@ -168,17 +168,43 @@ async function http(path, opts = {}) {
 }
 
 async function httpForm(path, formData, opts = {}) {
-  const res = await fetch(`${API_PREFIX}${path}`, { method: 'POST', body: formData, ...opts });
-  const ct = res.headers.get('content-type') || '';
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(text || `HTTP ${res.status}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+  
+  console.log('📤 Uploading to:', `${API_PREFIX}${path}`);
+  console.log('📤 FormData entries:', Array.from(formData.entries()).map(([key, value]) => 
+    key === 'image' ? [key, `File: ${value.name} (${value.size} bytes)`] : [key, value]
+  ));
+  
+  try {
+    const res = await fetch(`${API_PREFIX}${path}`, { 
+      method: 'POST', 
+      body: formData, 
+      signal: controller.signal,
+      ...opts 
+    });
+    
+    clearTimeout(timeoutId);
+    
+    console.log('📥 Response status:', res.status, res.statusText);
+    
+    const ct = res.headers.get('content-type') || '';
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+    if (!ct.includes('application/json')) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Expected JSON but got ${ct}. ${text.slice(0,200)}`);
+    }
+    return res.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout (30 seconds) - ไฟล์อาจมีขนาดใหญ่เกินไป');
+    }
+    throw error;
   }
-  if (!ct.includes('application/json')) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Expected JSON but got ${ct}. ${text.slice(0,200)}`);
-  }
-  return res.json();
 }
 
 export const API = {
