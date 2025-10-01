@@ -3,7 +3,7 @@
 const host = window.location.hostname; // จะเป็น localhost หรือ 172.20.10.3
 // export const API_BASE = import.meta.env.VITE_API_BASE || `http://${host}:8000`;
 //export const API_BASE = `http://${host}:8000`;
-export const API_BASE = `http://52.221.163.29:8000`;
+export const API_BASE = `https://api.52-221-163-29.sslip.io`;
 
 export const API_PREFIX = `${API_BASE}/api`;
 
