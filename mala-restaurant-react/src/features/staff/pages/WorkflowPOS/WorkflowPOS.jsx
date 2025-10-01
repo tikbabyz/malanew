@@ -816,7 +816,7 @@ export default function WorkflowPOS() {
         paid: false,
         persons: 1, // ไม่ใช้จำนวนคนในการคำนวณราคาแล้ว
         staffName: currentUserName,
-        store: STORE_PROFILE,
+        store: { ...STORE_PROFILE, cashier: currentUserName },
         channel: "หน้าร้าน",
       };
       const res = await API.orders.create(payload);

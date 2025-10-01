@@ -21,7 +21,7 @@ const fmt = (n) =>
   Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const methodLabel = (m) =>
-  ({ cash: 'เงินสด', qr: 'QR พร้อมเพย์' }[m] || m || '-');
+  ({ cash: 'เงินสด', qr: 'โอนผ่าน QR' }[m] || m || '-');
 
 const safe = (v, d = '-') => (v == null || v === '' ? d : v);
 const fmt2 = (n) =>
@@ -118,13 +118,19 @@ export default function Orders() {
       taxId: order?.store?.taxId || '',
       branch: order?.store?.branch || '',
     };
+    const cashierName =
+      order?.store?.cashier ||
+      order?.cashier ||
+      order?.staffName ||
+      order?.createdBy?.displayName ||
+      order?.createdBy?.name ||
+      '';
     const meta = {
       id: order?.id ?? '-',
       createdAt: order?.createdAt ? dayjs(order.createdAt).format('DD/MM/YYYY HH:mm') : '-',
-      tableNo: safe(order?.tableNo, '-'),
       persons: order?.persons || 1,
-      channel: order?.channel || 'หน้าร้าน',
-      cashier: order?.staffName || order?.createdBy?.name || '-',
+      channel: safe(order?.channel, 'หน้าร้าน'),
+      cashier: safe(cashierName, '-'),
     };
 
     const subtotal = items.reduce(
@@ -159,106 +165,157 @@ export default function Orders() {
     holder.style.zIndex = '-1';
     holder.style.background = '#fff';
 
-    holder.innerHTML = `
-      <div style="padding:24px 28px; background:#ffffff; color:#111; font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans Thai', sans-serif;">
-        <div style="text-align:center">
-          <h2 style="margin:0 0 4px; color:#ef4444; font-weight:900;">${store.name}</h2>
-          ${store.address ? `<div style="font-size:12px; color:#555;">${store.address}</div>` : ''}
-          ${(store.phone || store.taxId) ? `
-            <div style="font-size:12px; color:#555;">
-              ${store.phone ? `โทร: ${store.phone}` : ''} 
-              ${store.taxId ? `• เลขผู้เสียภาษี: ${store.taxId}${store.branch ? ` (สาขา ${store.branch})` : ''}` : ''}
-            </div>` : ''}
-        </div>
+    const storeAddressLine = store.address
+      ? `<div style="margin-top:6px; font-size:12px; color:#64748b;">${store.address}</div>`
+      : '';
+    const contactParts = [];
+    if (store.phone) {
+      contactParts.push(`โทร: ${store.phone}`);
+    }
+    if (store.taxId) {
+      const branchSuffix = store.branch ? ` (สาขา ${store.branch})` : '';
+      contactParts.push(`เลขประจำตัวผู้เสียภาษี: ${store.taxId}${branchSuffix}`);
+    }
+    const storeContactLine = contactParts.length
+      ? `<div style="margin-top:4px; font-size:12px; color:#94a3b8;">${contactParts.join(' | ')}</div>`
+      : '';
 
-        <div style="border-top:1px dashed #ddd; margin:12px 0;"></div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 12px; font-size:13px; color:#333;">
-          <div>เลขที่บิล: #${meta.id}</div>
-          <div style="text-align:right">วันที่: ${meta.createdAt}</div>
-          <div>โต๊ะ: ${meta.tableNo}</div>
-          <div style="text-align:right">จำนวนคน: ${meta.persons}</div>
-          <div>แชนเนล: ${meta.channel}</div>
-          <div style="text-align:right">แคชเชียร์: ${meta.cashier}</div>
-        </div>
-
-        <h3 style="margin:12px 0 6px; font-size:16px;">รายการ</h3>
+    const infoCells = [];
+    infoCells.push(`
+      <div>
+        <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#94a3b8;">เลขที่ใบเสร็จ</div>
+        <div style="margin-top:4px; font-size:15px; font-weight:700; color:#0f172a;">#${meta.id}</div>
+      </div>
+    `);
+    infoCells.push(`
+      <div style="text-align:right;">
+        <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#94a3b8;">วันที่-เวลา</div>
+        <div style="margin-top:4px; font-size:15px; font-weight:700; color:#0f172a;">${meta.createdAt}</div>
+      </div>
+    `);
+    infoCells.push(`
+      <div>
+        <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#94a3b8;">ช่องทางขาย</div>
+        <div style="margin-top:4px; font-size:15px; font-weight:700; color:#0f172a;">${meta.channel}</div>
+      </div>
+    `);
+    infoCells.push(`
+      <div style="text-align:right;">
+        <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#94a3b8;">พนักงาน</div>
+        <div style="margin-top:4px; font-size:15px; font-weight:700; color:#0f172a;">${meta.cashier}</div>
+      </div>
+    `);
+    if (meta.persons) {
+      infoCells.push(`
         <div>
-          ${
-            items.length
-              ? items.map((it) => `
-                <div style="display:flex; justify-content:space-between; gap:12px; margin:6px 0;">
-                  <span>${it.name} x ${it.qty}</span>
-                  <span>${fmt((Number(it.price)||0) * (Number(it.qty)||0))} ฿</span>
-                </div>`
-              ).join('')
-              : `<div style="color:#777;">(ไม่มีรายการ)</div>`
-          }
+          <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#94a3b8;">จำนวนลูกค้า</div>
+          <div style="margin-top:4px; font-size:15px; font-weight:700; color:#0f172a;">${meta.persons} ท่าน</div>
         </div>
+      `);
+    }
 
-        <div style="border-top:1px solid #000; margin-top:12px;"></div>
-
-        <div style="margin-top:8px; display:grid; gap:6px; font-size:14px;">
-          <div style="display:flex; justify-content:space-between;">
-            <span>Subtotal</span><span>${fmt2(subtotal)} บาท</span>
-          </div>
-          ${
-            discount > 0
-              ? `<div style="display:flex; justify-content:space-between;">
-                   <span>ส่วนลดทั้งบิล</span>
-                   <span>- ${fmt(discount)} บาท</span>
-                 </div>`
-              : ''
-          }
-          ${
-            service
-              ? `<div style="display:flex; justify-content:space-between;">
-                   <span>ค่าบริการ ${Math.round(serviceRate * 100)}%</span><span>${fmt2(service)} บาท</span>
-                 </div>`
-              : ''
-          }
-          ${
-            vat
-              ? `<div style="display:flex; justify-content:space-between;">
-                   <span>ภาษีมูลค่าเพิ่ม (VAT ${Math.round(vatRate * 100)}%)</span><span>${fmt2(vat)} บาท</span>
-                 </div>`
-              : ''
-          }
-          <div style="display:flex; justify-content:space-between; font-weight:900; font-size:16px; border-top:1px dashed #ddd; padding-top:6px;">
-            <span>ยอดสุทธิ</span><span>${fmt2(total)} บาท</span>
-          </div>
-        </div>
-
-        <h3 style="margin:12px 0 6px; font-size:16px;">การชำระเงิน</h3>
-        <div style="display:grid; gap:4px; font-size:14px;">
-          ${
-            pays.length
-              ? pays.map((p, i) => `
-                <div style="display:flex; justify-content:space-between;">
-                  <span>ครั้งที่ ${i + 1} • ${methodLabel(p.method)}${p.ref ? ` • Ref: ${p.ref}` : ''}</span>
-                  <span>${fmt2(p.amount)} บาท</span>
-                </div>`
-              ).join('')
-              : `<div style="color:#777;">* ยังไม่มีข้อมูลการชำระ (บันทึกบิลอย่างเดียว)</div>`
-          }
-          ${
-            pays.some(p => p.method === "cash")
-              ? `<div style="display:flex; justify-content:space-between; margin-top:6px; font-weight:900; font-size:15px; color:#ef4444;">
-                   <span>เงินสดรับ</span><span>${fmt2(cashReceived)} บาท</span>
-                 </div>
-                 <div style="display:flex; justify-content:space-between; margin-top:2px; font-weight:900; font-size:15px; color:#22c55e;">
-                   <span>เงินทอน</span><span>${fmt2(change)} บาท</span>
-                 </div>`
-              : ''
-          }
-        </div>
-
-        <div style="margin-top:14px; text-align:center; color:#666; font-size:12px;">
-          ขอบคุณที่อุดหนุน • เก็บใบเสร็จไว้เป็นหลักฐาน
+    const infoSection = `
+      <div style="margin-top:24px; background:#f1f5f9; border-radius:12px; padding:16px 18px;">
+        <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px;">
+          ${infoCells.join('')}
         </div>
       </div>
     `;
 
+    const itemRows = items.length
+      ? items.map((it) => `
+          <div style="display:flex; align-items:flex-start; gap:12px;">
+            <div style="flex:1;">
+              <div style="font-weight:600; color:#0f172a;">${it.name}</div>
+              <div style="font-size:12px; color:#94a3b8; margin-top:2px;">${fmt(Number(it.price) || 0)} บาท x ${Number(it.qty) || 0}</div>
+            </div>
+            <div style="width:120px; text-align:right; font-weight:700; color:#0f172a;">${fmt((Number(it.price) || 0) * (Number(it.qty) || 0))} บาท</div>
+          </div>
+        `).join('')
+      : `<div style="color:#94a3b8; font-size:13px;">ไม่มีรายการสินค้า</div>`;
+
+    const itemsSection = `
+      <div style="margin-top:24px;">
+        <div style="font-size:15px; font-weight:700; color:#0f172a;">รายการสินค้า</div>
+        <div style="margin-top:12px; display:flex; flex-direction:column; gap:12px;">
+          ${itemRows}
+        </div>
+      </div>
+    `;
+
+    const totalsRows = [
+      `<div style="display:flex; justify-content:space-between; align-items:center;"><span>ยอดก่อนส่วนลด</span><span>${fmt2(subtotal)} บาท</span></div>`,
+      discount > 0 ? `<div style="display:flex; justify-content:space-between; align-items:center;"><span>ส่วนลด</span><span>- ${fmt(discount)} บาท</span></div>` : '',
+      service ? `<div style="display:flex; justify-content:space-between; align-items:center;"><span>ค่าบริการ ${Math.round(serviceRate * 100)}%</span><span>${fmt2(service)} บาท</span></div>` : '',
+      vat ? `<div style="display:flex; justify-content:space-between; align-items:center;"><span>ภาษีมูลค่าเพิ่ม ${Math.round(vatRate * 100)}%</span><span>${fmt2(vat)} บาท</span></div>` : '',
+    ].filter(Boolean).join('');
+
+    const totalsSection = `
+      <div style="margin-top:24px; background:#0f172a; color:#e2e8f0; border-radius:12px; padding:18px 20px;">
+        <div style="display:flex; flex-direction:column; gap:8px; font-size:14px;">
+          ${totalsRows}
+          <div style="margin-top:6px; padding-top:12px; border-top:1px dashed rgba(226,232,240,0.4); display:flex; justify-content:space-between; font-size:16px; font-weight:800; color:#f8fafc;">
+            <span>ยอดสุทธิ</span>
+            <span>${fmt2(total)} บาท</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const paymentRows = pays.length
+      ? pays.map((p, index) => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border:1px solid #e2e8f0; border-radius:10px; background:#ffffff; box-shadow:0 4px 12px rgba(15,23,42,0.04);">
+            <div>
+              <div style="font-weight:600; color:#0f172a;">ชำระครั้งที่ ${index + 1}</div>
+              <div style="font-size:12px; color:#64748b; margin-top:2px;">${methodLabel(p.method)}${p.ref ? ` · Ref: ${p.ref}` : ''}</div>
+            </div>
+            <div style="font-weight:700; color:#0f172a;">${fmt2(p.amount)} บาท</div>
+          </div>
+        `).join('')
+      : `<div style="padding:12px 16px; border-radius:10px; background:#f8fafc; color:#94a3b8; font-size:13px;">ไม่มีข้อมูลการชำระเงิน</div>`;
+
+    const cashRows = pays.some((p) => p.method === 'cash')
+      ? `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 16px; background:#ecfdf5; border:1px solid #bbf7d0; border-radius:10px; font-weight:700; color:#047857;">
+            <span>รับเงินสด</span>
+            <span>${fmt2(cashReceived)} บาท</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 16px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; font-weight:700; color:#0369a1;">
+            <span>เงินทอน</span>
+            <span>${fmt2(change)} บาท</span>
+          </div>
+        `
+      : '';
+
+    const paymentSection = `
+      <div style="margin-top:24px;">
+        <div style="font-size:15px; font-weight:700; color:#0f172a;">การชำระเงิน</div>
+        <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
+          ${paymentRows}
+          ${cashRows}
+        </div>
+      </div>
+    `;
+
+    holder.innerHTML = `
+      <div style="padding:24px; background:#e2e8f0; color:#0f172a; font-family: 'Noto Sans Thai', 'Prompt', system-ui, -apple-system, 'Segoe UI', sans-serif;">
+        <div style="max-width:560px; margin:0 auto; background:#ffffff; border-radius:18px; box-shadow:0 18px 45px rgba(15,23,42,0.08); overflow:hidden;">
+          <div style="padding:32px 36px;">
+            <div style="text-align:center;">
+              <div style="font-size:22px; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; color:#ef4444;">${store.name}</div>
+              ${storeAddressLine}
+              ${storeContactLine}
+            </div>
+            <div style="margin:20px auto 0; width:64px; height:4px; background:linear-gradient(90deg, #ef4444, #f97316); border-radius:999px;"></div>
+            ${infoSection}
+            ${itemsSection}
+            ${totalsSection}
+            ${paymentSection}
+            <div style="margin-top:32px; text-align:center; color:#64748b; font-size:12px; letter-spacing:0.08em; text-transform:uppercase;">ขอบคุณที่อุดหนุน</div>
+          </div>
+        </div>
+      </div>
+    `;
     document.body.appendChild(holder);
 
     try {
