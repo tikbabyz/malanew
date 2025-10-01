@@ -61,6 +61,10 @@ const WORKFLOW_STEPS = [
   { id: 'billing', title: 'ชำระเงิน', icon: FaCreditCard }
 ];
 
+const MAX_DETECT_UPLOAD_BYTES = 1.5 * 1024 * 1024; // 1.5MB
+const MAX_DETECT_DIMENSION = 1600;
+const MIN_DETECT_DIMENSION = 640;
+
 // Helper functions
 const norm = (s) =>
   LABEL_ALIASES[s?.toString()?.trim()?.toLowerCase()] ??
@@ -142,11 +146,142 @@ export default function WorkflowPOS() {
   const [preview, setPreview] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState("");
   const [cameraStream, setCameraStream] = useState(null);
   const [showCamera, setShowCamera] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [facingMode, setFacingMode] = useState('environment');
+
+  useEffect(() => {
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
+
+  const updatePreview = (nextFile) => {
+    setPreview((prevUrl) => {
+      if (prevUrl) {
+        URL.revokeObjectURL(prevUrl);
+      }
+      if (!nextFile) {
+        return "";
+      }
+      return URL.createObjectURL(nextFile);
+    });
+  };
+
+  const ensureCanvas = () => {
+    let canvas = canvasRef.current;
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      canvas = document.createElement('canvas');
+      canvasRef.current = canvas;
+    }
+    return canvas;
+  };
+
+  const readFileAsDataURL = (inputFile) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์ภาพได้'));
+      reader.readAsDataURL(inputFile);
+    });
+
+  const loadImage = (src) =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('ไม่สามารถโหลดรูปภาพได้'));
+      img.src = typeof src === 'string' ? src : '';
+    });
+
+  const renderImageToBlob = async (image, width, height, quality) => {
+    const canvas = ensureCanvas();
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('อุปกรณ์นี้ไม่รองรับการบีบอัดรูปภาพ');
+    }
+    canvas.width = width;
+    canvas.height = height;
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(image, 0, 0, width, height);
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error('ไม่สามารถสร้างรูปภาพหลังบีบอัดได้'));
+          return;
+        }
+        resolve(blob);
+      }, 'image/jpeg', quality);
+    });
+  };
+
+  const preprocessImageFile = async (inputFile) => {
+    if (!(inputFile instanceof File)) {
+      throw new Error('ไฟล์ไม่ถูกต้อง');
+    }
+
+    const needsCompression = inputFile.size > MAX_DETECT_UPLOAD_BYTES;
+    if (!needsCompression) {
+      return inputFile;
+    }
+
+    const dataUrl = await readFileAsDataURL(inputFile);
+    if (typeof dataUrl !== 'string') {
+      return inputFile;
+    }
+
+    const image = await loadImage(dataUrl);
+    let width = image.naturalWidth || image.width;
+    let height = image.naturalHeight || image.height;
+
+    if (!width || !height) {
+      throw new Error('ไม่สามารถอ่านขนาดรูปภาพได้');
+    }
+
+    const maxDimension = Math.max(width, height);
+    if (maxDimension > MAX_DETECT_DIMENSION) {
+      const scale = MAX_DETECT_DIMENSION / maxDimension;
+      width = Math.max(MIN_DETECT_DIMENSION, Math.round(width * scale));
+      height = Math.max(MIN_DETECT_DIMENSION, Math.round(height * scale));
+    }
+
+    let currentWidth = width;
+    let currentHeight = height;
+    let quality = 0.85;
+    let blob = await renderImageToBlob(image, currentWidth, currentHeight, quality);
+
+    while (blob.size > MAX_DETECT_UPLOAD_BYTES && (quality > 0.55 || Math.max(currentWidth, currentHeight) > MIN_DETECT_DIMENSION)) {
+      if (quality > 0.55) {
+        quality = Math.max(0.55, quality - 0.1);
+      } else {
+        currentWidth = Math.max(MIN_DETECT_DIMENSION, Math.round(currentWidth * 0.85));
+        currentHeight = Math.max(MIN_DETECT_DIMENSION, Math.round(currentHeight * 0.85));
+      }
+      blob = await renderImageToBlob(image, currentWidth, currentHeight, quality);
+    }
+
+    if (blob.size > MAX_DETECT_UPLOAD_BYTES) {
+      throw new Error('ไม่สามารถลดขนาดรูปภาพให้ต่ำกว่า 1.5MB ได้ กรุณาถ่ายใหม่หรือเลือกไฟล์ที่เล็กลง');
+    }
+
+    console.log('เตรียมรูปภาพสำหรับ detect:', {
+      originalSize: inputFile.size,
+      processedSize: blob.size,
+      width: currentWidth,
+      height: currentHeight,
+      quality,
+    });
+
+    const baseName = inputFile.name?.replace(/\.[^/.]+$/, '') || 'detect-upload';
+    return new File([blob], `${baseName}.jpg`, {
+      type: 'image/jpeg',
+      lastModified: Date.now(),
+    });
+  };
 
   // Billing State
   const [order, setOrder] = useState(null);
@@ -523,7 +658,7 @@ export default function WorkflowPOS() {
       });
       
       setFile(capturedFile);
-      setPreview(URL.createObjectURL(capturedFile));
+      updatePreview(capturedFile);
       setResult(null);
       setError("");
       stopCamera();
@@ -534,7 +669,7 @@ export default function WorkflowPOS() {
       });
       
       setFile(capturedFile);
-      setPreview(URL.createObjectURL(capturedFile));
+      updatePreview(capturedFile);
       setResult(null);
       setError("");
       stopCamera();
@@ -542,17 +677,37 @@ export default function WorkflowPOS() {
   };
 
   // Detection Functions
-  const onFile = (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (!["image/jpeg", "image/png", "image/heic", "image/heif"].includes(f.type)) {
+  const onFile = async (e) => {
+    const input = e.target;
+    const selected = input.files?.[0];
+    if (!selected) return;
+    if (!["image/jpeg", "image/png", "image/heic", "image/heif"].includes(selected.type)) {
       setError("รองรับเฉพาะ JPEG, PNG, HEIC หรือ HEIF");
+      input.value = '';
       return;
     }
     setError("");
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
     setResult(null);
+    try {
+      setCompressing(true);
+      const processed = await preprocessImageFile(selected);
+      setFile(processed);
+      updatePreview(processed);
+      console.log('ข้อมูลรูปภาพที่เตรียมไว้สำหรับ detect:', {
+        originalSize: selected.size,
+        processedSize: processed.size,
+        originalType: selected.type,
+        processedType: processed.type,
+      });
+    } catch (prepareErr) {
+      console.error('เตรียมรูปภาพสำหรับ detect ไม่สำเร็จ:', prepareErr);
+      setFile(null);
+      updatePreview(null);
+      setError((prepareErr && prepareErr.message) || 'ไม่สามารถเตรียมรูปภาพได้');
+    } finally {
+      setCompressing(false);
+      input.value = '';
+    }
   };
 
   const runDetect = async () => {
@@ -1285,12 +1440,17 @@ export default function WorkflowPOS() {
                       <button 
                         className={styles.detectBtn}
                         onClick={runDetect} 
-                        disabled={!file || loading}
+                        disabled={!file || loading || compressing}
                       >
                         {loading ? (
                           <>
                             <FaSpinner className={`${styles.btnIcon} ${styles.spinning}`} />
                             กำลังตรวจจับ...
+                          </>
+                        ) : compressing ? (
+                          <>
+                            <FaSpinner className={`${styles.btnIcon} ${styles.spinning}`} />
+                            กำลังเตรียมรูปภาพ...
                           </>
                         ) : (
                           <>
