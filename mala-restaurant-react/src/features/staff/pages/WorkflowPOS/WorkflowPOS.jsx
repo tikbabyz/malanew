@@ -463,14 +463,30 @@ export default function WorkflowPOS() {
     
     if (!video || !canvas) return;
     
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // ลดขนาดรูปภาพเพื่อป้องกันไฟล์ใหญ่เกินไป
+    const maxWidth = 1024;
+    const maxHeight = 1024;
+    
+    let { videoWidth, videoHeight } = video;
+    
+    // คำนวณขนาดใหม่โดยคงอัตราส่วน
+    if (videoWidth > maxWidth || videoHeight > maxHeight) {
+      const ratio = Math.min(maxWidth / videoWidth, maxHeight / videoHeight);
+      videoWidth = Math.floor(videoWidth * ratio);
+      videoHeight = Math.floor(videoHeight * ratio);
+    }
+    
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
     
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
     
     canvas.toBlob((blob) => {
       if (blob) {
+        console.log('📸 Captured photo size:', blob.size, 'bytes');
+        console.log('📸 Captured photo dimensions:', videoWidth, 'x', videoHeight);
+        
         const capturedFile = new File([blob], `camera-capture-${Date.now()}.jpg`, {
           type: 'image/jpeg'
         });
@@ -481,7 +497,7 @@ export default function WorkflowPOS() {
         setError("");
         stopCamera();
       }
-    }, 'image/jpeg', 0.9);
+    }, 'image/jpeg', 0.8); // ลด quality เป็น 0.8 เพื่อลดขนาดไฟล์
   };
 
   // Detection Functions
@@ -504,14 +520,28 @@ export default function WorkflowPOS() {
       return;
     }
     
+    console.log('🔍 Starting detection with file:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified
+    });
+    
     setLoading(true);
     setError("");
     setResult(null);
     
     try {
       const res = await API.detectImage(file);
+      console.log('✅ Detection successful:', res);
       setResult(res);
     } catch (err) {
+      alert('❌ Detection failed:', err);
+      console.error('Error details:', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack
+      });
       setError(String(err.message || err));
     } finally {
       setLoading(false);
