@@ -61,7 +61,7 @@ const WORKFLOW_STEPS = [
   { id: 'billing', title: 'ชำระเงิน', icon: FaCreditCard }
 ];
 
-const MAX_DETECT_UPLOAD_BYTES = 1.5 * 1024 * 1024; // 1.5MB
+const MAX_DETECT_UPLOAD_BYTES = 8 * 1024 * 1024; // 8MB
 const MAX_DETECT_DIMENSION = 1600;
 const MIN_DETECT_DIMENSION = 640;
 
@@ -265,7 +265,7 @@ export default function WorkflowPOS() {
     }
 
     if (blob.size > MAX_DETECT_UPLOAD_BYTES) {
-      throw new Error('ไม่สามารถลดขนาดรูปภาพให้ต่ำกว่า 1.5MB ได้ กรุณาถ่ายใหม่หรือเลือกไฟล์ที่เล็กลง');
+      throw new Error('ไม่สามารถลดขนาดรูปภาพให้ต่ำกว่า 8MB ได้ กรุณาถ่ายใหม่หรือเลือกไฟล์ที่เล็กลง');
     }
 
     console.log('เตรียมรูปภาพสำหรับ detect:', {
