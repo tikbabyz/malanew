@@ -556,7 +556,7 @@ export default function WorkflowPOS() {
       setResult(res);
     } catch (err) {
       alert('❌ Detection failed:', err);
-      console.error('Error details:', {
+      alert('Error details:', {
         message: err.message,
         name: err.name,
         stack: err.stack
