@@ -551,17 +551,46 @@ export default function WorkflowPOS() {
     setResult(null);
     
     try {
+      // เช็ค API connection ก่อน
+      console.log('🔗 Testing API connection...');
+      const healthCheck = await fetch(`${API_PREFIX}/health`);
+      console.log('🔗 Health check response:', healthCheck.status, healthCheck.statusText);
+      
+      if (!healthCheck.ok) {
+        throw new Error(`Backend server ไม่พร้อมใช้งาน (${healthCheck.status})`);
+      }
+      
+      console.log('🚀 Sending image to detection API...');
       const res = await API.detectImage(file);
       console.log('✅ Detection successful:', res);
       setResult(res);
     } catch (err) {
-      alert('❌ Detection failed:', err);
+      alert(`❌ Detection failed: ${err}`);
+      
+      let errorMessage = 'เกิดข้อผิดพลาดในการตรวจจับภาพ';
+      
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        errorMessage = 'ไม่สามารถเชื่อมต่อกับ Backend Server ได้';
+      } else if (err.message.includes('Failed to fetch')) {
+        errorMessage = 'การเชื่อมต่อขัดข้อง กรุณาตรวจสอบ Backend Server';
+      } else if (err.message.includes('413')) {
+        errorMessage = 'ไฟล์รูปภาพมีขนาดใหญ่เกินไป';
+      } else if (err.message.includes('500')) {
+        errorMessage = 'เกิดข้อผิดพลาดภายใน Server';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      alert(`❌ เกิดข้อผิดพลาด: ${errorMessage}`);
       alert('Error details:', {
         message: err.message,
         name: err.name,
-        stack: err.stack
+        stack: err.stack,
+        fileSize: file.size,
+        fileName: file.name
       });
-      setError(String(err.message || err));
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
