@@ -463,24 +463,28 @@ export default function WorkflowPOS() {
     
     if (!video || !canvas) return;
     
-    // ลดขนาดรูปภาพให้เล็กมาก
-    const maxSize = 400; // ลดเป็น 400x400 pixels
+    // ลดขนาดรูปภาพให้เล็กมากๆ
+    const maxSize = 300; // ลดเป็น 300x300 pixels
     
     let { videoWidth, videoHeight } = video;
     
-    // คำนวณขนาดใหม่โดยคงอัตราส่วน
+    // คำนวณขนาดใหม่โดยคงอัตราส่วน (บังคับให้เล็ก)
     const ratio = Math.min(maxSize / videoWidth, maxSize / videoHeight);
-    const newWidth = Math.floor(videoWidth * ratio);
-    const newHeight = Math.floor(videoHeight * ratio);
+    const newWidth = Math.max(200, Math.floor(videoWidth * ratio)); // ขั้นต่ำ 200px
+    const newHeight = Math.max(200, Math.floor(videoHeight * ratio)); // ขั้นต่ำ 200px
     
-    canvas.width = newWidth;
-    canvas.height = newHeight;
+    // บังคับให้ไม่เกิน 300px
+    const finalWidth = Math.min(300, newWidth);
+    const finalHeight = Math.min(300, newHeight);
+    
+    canvas.width = finalWidth;
+    canvas.height = finalHeight;
     
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, newWidth, newHeight);
+    ctx.drawImage(video, 0, 0, finalWidth, finalHeight);
     
-    // ลด quality ให้ต่ำมาก
-    const dataURL = canvas.toDataURL('image/jpeg', 0.3); // quality 30%
+    // ลด quality ให้ต่ำมากๆ
+    const dataURL = canvas.toDataURL('image/jpeg', 0.1); // quality 10% เท่านั้น!
     
     // แปลง dataURL เป็น blob
     const byteCharacters = atob(dataURL.split(',')[1]);
@@ -491,23 +495,18 @@ export default function WorkflowPOS() {
     const byteArray = new Uint8Array(byteNumbers);
     const blob = new Blob([byteArray], { type: 'image/jpeg' });
     
-    alert(`📸 ถ่ายรูปแล้ว ขนาด: ${(blob.size / 1024).toFixed(2)} KB (${newWidth}x${newHeight})`);
+    alert(`📸 ถ่ายรูปแล้ว ขนาด: ${(blob.size / 1024).toFixed(2)} KB (${finalWidth}x${finalHeight})`);
     
-    // ถ้าไฟล์ยังใหญ่เกิน 100KB ให้ลดขนาดอีก
-    if (blob.size > 100 * 1024) {
+    // ถ้าไฟล์ยังใหญ่เกิน 50KB ให้ลดขนาดอีก
+    if (blob.size > 50 * 1024) {
       alert('⚠️ รูปยังใหญ่เกินไป กำลังลดขนาดเพิ่มเติม...');
       
-      // ลดขนาดเป็น 300x300 และ quality 20%
-      const smallerSize = 300;
-      const smallerRatio = Math.min(smallerSize / videoWidth, smallerSize / videoHeight);
-      const smallerWidth = Math.floor(videoWidth * smallerRatio);
-      const smallerHeight = Math.floor(videoHeight * smallerRatio);
+      // ลดขนาดเป็น 200x200 และ quality 5%
+      canvas.width = 200;
+      canvas.height = 200;
+      ctx.drawImage(video, 0, 0, 200, 200);
       
-      canvas.width = smallerWidth;
-      canvas.height = smallerHeight;
-      ctx.drawImage(video, 0, 0, smallerWidth, smallerHeight);
-      
-      const smallerDataURL = canvas.toDataURL('image/jpeg', 0.2); // quality 20%
+      const smallerDataURL = canvas.toDataURL('image/jpeg', 0.05); // quality 5% เท่านั้น!
       const smallerByteCharacters = atob(smallerDataURL.split(',')[1]);
       const smallerByteNumbers = new Array(smallerByteCharacters.length);
       for (let i = 0; i < smallerByteCharacters.length; i++) {
@@ -516,7 +515,7 @@ export default function WorkflowPOS() {
       const smallerByteArray = new Uint8Array(smallerByteNumbers);
       const smallerBlob = new Blob([smallerByteArray], { type: 'image/jpeg' });
       
-      alert(`📸 ลดขนาดเสร็จแล้ว: ${(smallerBlob.size / 1024).toFixed(2)} KB (${smallerWidth}x${smallerHeight})`);
+      alert(`📸 ลดขนาดเสร็จแล้ว: ${(smallerBlob.size / 1024).toFixed(2)} KB (200x200)`);
       
       const capturedFile = new File([smallerBlob], `camera-capture-${Date.now()}.jpg`, {
         type: 'image/jpeg',
