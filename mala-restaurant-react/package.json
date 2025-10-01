@@ -17,7 +17,8 @@
     "react-router-dom": "^6.26.2",
     "react-toastify": "^11.0.5",
     "recharts": "^3.2.1",
-    "zustand": "^4.5.2"
+    "zustand": "^4.5.2",
+    "react-easy-crop": "^5.0.7"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.3",

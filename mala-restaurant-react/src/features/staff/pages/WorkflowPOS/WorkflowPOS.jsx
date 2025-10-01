@@ -19,8 +19,12 @@ import {
   FaMoneyBillWave,
   FaQrcode,
   FaBullseye,
-  FaRobot
+  FaCrop,
+  FaRobot,
+  FaTimes
 } from 'react-icons/fa';
+import Cropper from 'react-easy-crop';
+import 'react-easy-crop/react-easy-crop.css';
 import ProductPicker from "@features/staff/components/ProductPicker/ProductPicker.jsx";
 import { calcTotals, splitEqual } from "@utils/billing.js";
 import { effectiveUnitPrice, baseUnitPrice } from "@utils/price.js";
@@ -155,6 +159,10 @@ export default function WorkflowPOS() {
   const [showCamera, setShowCamera] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [facingMode, setFacingMode] = useState('environment');
+  const [showCropper, setShowCropper] = useState(false);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
   useEffect(() => {
     return () => {
@@ -301,6 +309,104 @@ export default function WorkflowPOS() {
       type: 'image/jpeg',
       lastModified: Date.now(),
     });
+  };
+
+  const handleOpenCropper = () => {
+    if (!preview) {
+      return;
+    }
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    setShowCropper(true);
+  };
+
+  const handleCropComplete = (_, areaPixels) => {
+    setCroppedAreaPixels(areaPixels);
+  };
+
+  const closeCropper = () => {
+    if (!showCropper) {
+      return;
+    }
+    setShowCropper(false);
+  };
+
+  const applyCrop = async () => {
+    if (!preview || !croppedAreaPixels) {
+      setShowCropper(false);
+      return;
+    }
+
+    try {
+      setCompressing(true);
+      const image = await loadImage(preview);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        throw new Error('ไม่สามารถครอบรูปได้');
+      }
+
+      const naturalWidth = image.naturalWidth || image.width;
+      const naturalHeight = image.naturalHeight || image.height;
+      const cropX = Math.max(0, Math.floor(croppedAreaPixels.x));
+      const cropY = Math.max(0, Math.floor(croppedAreaPixels.y));
+      const cropWidth = Math.max(1, Math.round(croppedAreaPixels.width));
+      const cropHeight = Math.max(1, Math.round(croppedAreaPixels.height));
+      const safeWidth = Math.min(cropWidth, Math.max(1, naturalWidth - cropX));
+      const safeHeight = Math.min(cropHeight, Math.max(1, naturalHeight - cropY));
+
+      if (safeWidth <= 0 || safeHeight <= 0) {
+        throw new Error('ไม่สามารถครอบรูปได้');
+      }
+
+      canvas.width = safeWidth;
+      canvas.height = safeHeight;
+
+      ctx.drawImage(
+        image,
+        cropX,
+        cropY,
+        safeWidth,
+        safeHeight,
+        0,
+        0,
+        safeWidth,
+        safeHeight
+      );
+
+      const croppedBlob = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('ไม่สามารถครอบรูปได้'));
+              return;
+            }
+            resolve(blob);
+          },
+          'image/jpeg',
+          0.92
+        );
+      });
+
+      const baseName = file?.name?.replace(/\.[^/.]+$/, '') || 'detect-upload';
+      const croppedFile = new File([croppedBlob], `${baseName}-crop.jpg`, {
+        type: 'image/jpeg',
+        lastModified: Date.now(),
+      });
+
+      const processed = await preprocessImageFile(croppedFile);
+      setFile(processed);
+      updatePreview(processed);
+      setResult(null);
+      setError('');
+    } catch (err) {
+      console.error('Crop failed', err);
+      setError(err?.message || 'ไม่สามารถครอบรูปได้');
+    } finally {
+      setCompressing(false);
+      setShowCropper(false);
+    }
   };
 
   // Billing State
@@ -1435,6 +1541,79 @@ export default function WorkflowPOS() {
                   </div>
                 )}
 
+                {showCropper && preview && (
+                  <div className={styles.cropModal}>
+                    <div className={styles.cropContainer}>
+                      <div className={styles.cropHeader}>
+                        <h3>ปรับกรอบรูปก่อนส่ง</h3>
+                        <button
+                          type="button"
+                          className={styles.closeCropBtn}
+                          onClick={closeCropper}
+                          disabled={compressing}
+                        >
+                          <FaTimes />
+                        </button>
+                      </div>
+                      <div className={styles.cropArea}>
+                        <Cropper
+                          image={preview}
+                          crop={crop}
+                          zoom={zoom}
+                          onCropChange={setCrop}
+                          onZoomChange={setZoom}
+                          onCropComplete={handleCropComplete}
+                          cropShape="rect"
+                          showGrid
+                        />
+                      </div>
+                      <div className={styles.cropControls}>
+                        <label className={styles.cropLabel}>
+                          ซูม
+                          <input
+                            type="range"
+                            min="1"
+                            max="3"
+                            step="0.01"
+                            value={zoom}
+                            onChange={(event) => setZoom(Number(event.target.value))}
+                            className={styles.cropSlider}
+                          />
+                        </label>
+                      </div>
+                      <div className={styles.cropActions}>
+                        <button
+                          type="button"
+                          className={styles.cancelBtn}
+                          onClick={closeCropper}
+                          disabled={compressing}
+                        >
+                          <FaTimes className={styles.btnIcon} />
+                          ยกเลิก
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.confirmBtn}
+                          onClick={applyCrop}
+                          disabled={compressing}
+                        >
+                          {compressing ? (
+                            <>
+                              <FaSpinner className={`${styles.btnIcon} ${styles.spinning}`} />
+                              กำลังบันทึก...
+                            </>
+                          ) : (
+                            <>
+                              <FaCheck className={styles.btnIcon} />
+                              ใช้รูปที่ครอบ
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {preview && (
                   <div className={styles.previewSection}>
                     <div
@@ -1451,6 +1630,14 @@ export default function WorkflowPOS() {
                     </div>
 
                     <div className={styles.detectActions}>
+                      <button
+                        className={styles.cropBtn}
+                        onClick={handleOpenCropper}
+                        disabled={!preview || loading || compressing || showCropper}
+                      >
+                        <FaCrop className={styles.btnIcon} />
+                        ครอบรูป
+                      </button>
                       <button 
                         className={styles.detectBtn}
                         onClick={runDetect} 
@@ -1459,17 +1646,17 @@ export default function WorkflowPOS() {
                         {loading ? (
                           <>
                             <FaSpinner className={`${styles.btnIcon} ${styles.spinning}`} />
-                            กำลังตรวจจับ...
+                            กำลังส่งข้อมูล...
                           </>
                         ) : compressing ? (
                           <>
                             <FaSpinner className={`${styles.btnIcon} ${styles.spinning}`} />
-                            กำลังเตรียมรูปภาพ...
+                            กำลังเตรียมรูป...
                           </>
                         ) : (
                           <>
                             <FaBullseye className={styles.btnIcon} />
-                            เริ่มตรวจจับ (AI)
+                            ตรวจนับ (AI)
                           </>
                         )}
                       </button>
