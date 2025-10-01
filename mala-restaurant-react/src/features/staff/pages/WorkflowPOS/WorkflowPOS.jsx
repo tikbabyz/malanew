@@ -62,6 +62,9 @@ const WORKFLOW_STEPS = [
 ];
 
 const MAX_DETECT_UPLOAD_BYTES = 8 * 1024 * 1024; // 8MB
+const TARGET_DETECT_UPLOAD_BYTES = 2.5 * 1024 * 1024; // Aim to compress under ~2.5MB before upload
+const MIN_DETECT_JPEG_QUALITY = 0.45;
+const JPEG_MIME_TYPES = new Set(["image/jpeg", "image/jpg", "image/pjpeg"]);
 const MAX_DETECT_DIMENSION = 1600;
 const MIN_DETECT_DIMENSION = 640;
 
@@ -224,8 +227,11 @@ export default function WorkflowPOS() {
       throw new Error('ไฟล์ไม่ถูกต้อง');
     }
 
-    const needsCompression = inputFile.size > MAX_DETECT_UPLOAD_BYTES;
-    if (!needsCompression) {
+    const mime = (inputFile.type || '').toLowerCase();
+    const isJpeg = JPEG_MIME_TYPES.has(mime);
+    const shouldProcess = inputFile.size > TARGET_DETECT_UPLOAD_BYTES || !isJpeg;
+
+    if (!shouldProcess && inputFile.size <= MAX_DETECT_UPLOAD_BYTES) {
       return inputFile;
     }
 
@@ -251,12 +257,15 @@ export default function WorkflowPOS() {
 
     let currentWidth = width;
     let currentHeight = height;
-    let quality = 0.85;
+    let quality = inputFile.size > 10 * 1024 * 1024 ? 0.78 : 0.85;
     let blob = await renderImageToBlob(image, currentWidth, currentHeight, quality);
 
-    while (blob.size > MAX_DETECT_UPLOAD_BYTES && (quality > 0.55 || Math.max(currentWidth, currentHeight) > MIN_DETECT_DIMENSION)) {
-      if (quality > 0.55) {
-        quality = Math.max(0.55, quality - 0.1);
+    while (
+      blob.size > TARGET_DETECT_UPLOAD_BYTES &&
+      (quality > MIN_DETECT_JPEG_QUALITY || Math.max(currentWidth, currentHeight) > MIN_DETECT_DIMENSION)
+    ) {
+      if (quality > MIN_DETECT_JPEG_QUALITY) {
+        quality = Math.max(MIN_DETECT_JPEG_QUALITY, quality - 0.08);
       } else {
         currentWidth = Math.max(MIN_DETECT_DIMENSION, Math.round(currentWidth * 0.85));
         currentHeight = Math.max(MIN_DETECT_DIMENSION, Math.round(currentHeight * 0.85));
@@ -268,12 +277,23 @@ export default function WorkflowPOS() {
       throw new Error('ไม่สามารถลดขนาดรูปภาพให้ต่ำกว่า 8MB ได้ กรุณาถ่ายใหม่หรือเลือกไฟล์ที่เล็กลง');
     }
 
+    if (blob.size > TARGET_DETECT_UPLOAD_BYTES) {
+      console.warn('detect image compressed but still above target size', {
+        targetBytes: TARGET_DETECT_UPLOAD_BYTES,
+        finalSize: blob.size,
+        quality,
+        width: currentWidth,
+        height: currentHeight,
+      });
+    }
+
     console.log('เตรียมรูปภาพสำหรับ detect:', {
       originalSize: inputFile.size,
       processedSize: blob.size,
       width: currentWidth,
       height: currentHeight,
       quality,
+      targetBytes: TARGET_DETECT_UPLOAD_BYTES,
     });
 
     const baseName = inputFile.name?.replace(/\.[^/.]+$/, '') || 'detect-upload';
