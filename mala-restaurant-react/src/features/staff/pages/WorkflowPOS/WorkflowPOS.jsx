@@ -463,9 +463,9 @@ export default function WorkflowPOS() {
     
     if (!video || !canvas) return;
     
-    // ลดขนาดรูปภาพเพื่อป้องกันไฟล์ใหญ่เกินไป
-    const maxWidth = 1024;
-    const maxHeight = 1024;
+    // ลดขนาดรูปภาพให้เล็กลงมากเพื่อให้ได้ไฟล์ประมาณ 100KB
+    const maxWidth = 800;
+    const maxHeight = 800;
     
     let { videoWidth, videoHeight } = video;
     
@@ -484,20 +484,39 @@ export default function WorkflowPOS() {
     
     canvas.toBlob((blob) => {
       if (blob) {
-        console.log('📸 Captured photo size:', blob.size, 'bytes');
+        console.log('📸 Captured photo size:', (blob.size / 1024).toFixed(2), 'KB');
         console.log('📸 Captured photo dimensions:', videoWidth, 'x', videoHeight);
         
-        const capturedFile = new File([blob], `camera-capture-${Date.now()}.jpg`, {
-          type: 'image/jpeg'
-        });
-        
-        setFile(capturedFile);
-        setPreview(URL.createObjectURL(capturedFile));
-        setResult(null);
-        setError("");
-        stopCamera();
+        // ถ้าไฟล์ยังใหญ่เกิน 200KB ให้ลด quality อีก
+        if (blob.size > 200 * 1024) {
+          console.log('⚠️ File still too large, reducing quality...');
+          canvas.toBlob((smallerBlob) => {
+            if (smallerBlob) {
+              console.log('📸 Reduced photo size:', (smallerBlob.size / 1024).toFixed(2), 'KB');
+              const capturedFile = new File([smallerBlob], `camera-capture-${Date.now()}.jpg`, {
+                type: 'image/jpeg'
+              });
+              
+              setFile(capturedFile);
+              setPreview(URL.createObjectURL(capturedFile));
+              setResult(null);
+              setError("");
+              stopCamera();
+            }
+          }, 'image/jpeg', 0.5); // quality ต่ำมาก
+        } else {
+          const capturedFile = new File([blob], `camera-capture-${Date.now()}.jpg`, {
+            type: 'image/jpeg'
+          });
+          
+          setFile(capturedFile);
+          setPreview(URL.createObjectURL(capturedFile));
+          setResult(null);
+          setError("");
+          stopCamera();
+        }
       }
-    }, 'image/jpeg', 0.8); // ลด quality เป็น 0.8 เพื่อลดขนาดไฟล์
+    }, 'image/jpeg', 0.7); // ลด quality เป็น 0.7
   };
 
   // Detection Functions
