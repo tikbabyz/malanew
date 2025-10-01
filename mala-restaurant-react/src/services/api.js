@@ -194,7 +194,7 @@ export const API = {
     const vals = [bbox.x1, bbox.y1, bbox.x2, bbox.y2].map(v => Math.round(Number(v) || 0));
     fd.append('bbox', vals.join(','));
   }
-  return httpForm('/api/detect', fd); // เดิมเป็น '/detect' ให้แก้เป็น '/api/detect'
+  return httpForm('/detect', fd);
   },
   
   // Image upload for products
