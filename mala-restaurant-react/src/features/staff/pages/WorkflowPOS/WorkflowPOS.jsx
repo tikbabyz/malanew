@@ -463,90 +463,83 @@ export default function WorkflowPOS() {
     
     if (!video || !canvas) return;
     
-    // ลดขนาดรูปภาพให้เล็กลงมากเพื่อให้ได้ไฟล์ประมาณ 100KB
-    const maxWidth = 800;
-    const maxHeight = 800;
+    // ลดขนาดรูปภาพให้เล็กมาก
+    const maxSize = 400; // ลดเป็น 400x400 pixels
     
     let { videoWidth, videoHeight } = video;
     
     // คำนวณขนาดใหม่โดยคงอัตราส่วน
-    if (videoWidth > maxWidth || videoHeight > maxHeight) {
-      const ratio = Math.min(maxWidth / videoWidth, maxHeight / videoHeight);
-      videoWidth = Math.floor(videoWidth * ratio);
-      videoHeight = Math.floor(videoHeight * ratio);
-    }
+    const ratio = Math.min(maxSize / videoWidth, maxSize / videoHeight);
+    const newWidth = Math.floor(videoWidth * ratio);
+    const newHeight = Math.floor(videoHeight * ratio);
     
-    canvas.width = videoWidth;
-    canvas.height = videoHeight;
+    canvas.width = newWidth;
+    canvas.height = newHeight;
     
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
+    ctx.drawImage(video, 0, 0, newWidth, newHeight);
     
-    // ใช้ dataURL แทน blob เพื่อให้แน่ใจว่าได้ไฟล์ที่ถูกต้อง
-    const dataURL = canvas.toDataURL('image/jpeg', 0.6); // quality 60%
+    // ลด quality ให้ต่ำมาก
+    const dataURL = canvas.toDataURL('image/jpeg', 0.3); // quality 30%
     
     // แปลง dataURL เป็น blob
-    fetch(dataURL)
-      .then(res => res.blob())
-      .then(blob => {
-        console.log('📸 Captured photo size:', (blob.size / 1024).toFixed(2), 'KB');
-        console.log('📸 Captured photo dimensions:', videoWidth, 'x', videoHeight);
-        console.log('📸 Blob type:', blob.type);
-        
-        // ถ้าไฟล์ยังใหญ่เกิน 150KB ให้ลด quality อีก
-        if (blob.size > 150 * 1024) {
-          console.log('⚠️ File too large, reducing quality more...');
-          const smallerDataURL = canvas.toDataURL('image/jpeg', 0.3); // quality 30%
-          
-          fetch(smallerDataURL)
-            .then(res => res.blob())
-            .then(smallerBlob => {
-              console.log('📸 Reduced photo size:', (smallerBlob.size / 1024).toFixed(2), 'KB');
-              
-              const capturedFile = new File([smallerBlob], `camera-capture-${Date.now()}.jpg`, {
-                type: 'image/jpeg',
-                lastModified: Date.now()
-              });
-              
-              // Validate file before setting
-              if (capturedFile.size > 0 && capturedFile.type === 'image/jpeg') {
-                setFile(capturedFile);
-                setPreview(URL.createObjectURL(capturedFile));
-                setResult(null);
-                setError("");
-                stopCamera();
-              } else {
-                console.error('❌ Invalid file created');
-                setError('เกิดข้อผิดพลาดในการสร้างไฟล์รูปภาพ');
-              }
-            })
-            .catch(err => {
-              console.error('❌ Error creating smaller file:', err);
-              setError('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
-            });
-        } else {
-          const capturedFile = new File([blob], `camera-capture-${Date.now()}.jpg`, {
-            type: 'image/jpeg',
-            lastModified: Date.now()
-          });
-          
-          // Validate file before setting
-          if (capturedFile.size > 0 && capturedFile.type === 'image/jpeg') {
-            setFile(capturedFile);
-            setPreview(URL.createObjectURL(capturedFile));
-            setResult(null);
-            setError("");
-            stopCamera();
-          } else {
-            console.error('❌ Invalid file created');
-            setError('เกิดข้อผิดพลาดในการสร้างไฟล์รูปภาพ');
-          }
-        }
-      })
-      .catch(err => {
-        console.error('❌ Error creating file from canvas:', err);
-        setError('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
+    const byteCharacters = atob(dataURL.split(',')[1]);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'image/jpeg' });
+    
+    alert(`📸 ถ่ายรูปแล้ว ขนาด: ${(blob.size / 1024).toFixed(2)} KB (${newWidth}x${newHeight})`);
+    
+    // ถ้าไฟล์ยังใหญ่เกิน 100KB ให้ลดขนาดอีก
+    if (blob.size > 100 * 1024) {
+      alert('⚠️ รูปยังใหญ่เกินไป กำลังลดขนาดเพิ่มเติม...');
+      
+      // ลดขนาดเป็น 300x300 และ quality 20%
+      const smallerSize = 300;
+      const smallerRatio = Math.min(smallerSize / videoWidth, smallerSize / videoHeight);
+      const smallerWidth = Math.floor(videoWidth * smallerRatio);
+      const smallerHeight = Math.floor(videoHeight * smallerRatio);
+      
+      canvas.width = smallerWidth;
+      canvas.height = smallerHeight;
+      ctx.drawImage(video, 0, 0, smallerWidth, smallerHeight);
+      
+      const smallerDataURL = canvas.toDataURL('image/jpeg', 0.2); // quality 20%
+      const smallerByteCharacters = atob(smallerDataURL.split(',')[1]);
+      const smallerByteNumbers = new Array(smallerByteCharacters.length);
+      for (let i = 0; i < smallerByteCharacters.length; i++) {
+        smallerByteNumbers[i] = smallerByteCharacters.charCodeAt(i);
+      }
+      const smallerByteArray = new Uint8Array(smallerByteNumbers);
+      const smallerBlob = new Blob([smallerByteArray], { type: 'image/jpeg' });
+      
+      alert(`📸 ลดขนาดเสร็จแล้ว: ${(smallerBlob.size / 1024).toFixed(2)} KB (${smallerWidth}x${smallerHeight})`);
+      
+      const capturedFile = new File([smallerBlob], `camera-capture-${Date.now()}.jpg`, {
+        type: 'image/jpeg',
+        lastModified: Date.now()
       });
+      
+      setFile(capturedFile);
+      setPreview(URL.createObjectURL(capturedFile));
+      setResult(null);
+      setError("");
+      stopCamera();
+    } else {
+      const capturedFile = new File([blob], `camera-capture-${Date.now()}.jpg`, {
+        type: 'image/jpeg',
+        lastModified: Date.now()
+      });
+      
+      setFile(capturedFile);
+      setPreview(URL.createObjectURL(capturedFile));
+      setResult(null);
+      setError("");
+      stopCamera();
+    }
   };
 
   // Detection Functions
@@ -582,27 +575,26 @@ export default function WorkflowPOS() {
     
     try {
       // เช็ค API connection ก่อน
-      console.log('🔗 Testing API connection...');
+      alert('🔗 กำลังเช็คการเชื่อมต่อ Backend...');
       const healthCheck = await fetch(`${API_PREFIX}/health`);
-      console.log('🔗 Health check response:', healthCheck.status, healthCheck.statusText);
       
       if (!healthCheck.ok) {
         throw new Error(`Backend server ไม่พร้อมใช้งาน (${healthCheck.status})`);
       }
       
-      console.log('🚀 Sending image to detection API...');
+      alert(`🚀 กำลังส่งรูปไป detect (ขนาด: ${(file.size / 1024).toFixed(2)} KB)...`);
       const res = await API.detectImage(file);
-      console.log('✅ Detection successful:', res);
+      alert('✅ Detect สำเร็จ!');
       setResult(res);
     } catch (err) {
-      alert(`❌ Detection failed: ${err}`);
-      
       let errorMessage = 'เกิดข้อผิดพลาดในการตรวจจับภาพ';
       
       if (err.name === 'TypeError' && err.message.includes('fetch')) {
         errorMessage = 'ไม่สามารถเชื่อมต่อกับ Backend Server ได้';
       } else if (err.message.includes('Failed to fetch')) {
         errorMessage = 'การเชื่อมต่อขัดข้อง กรุณาตรวจสอบ Backend Server';
+      } else if (err.message.includes('timeout')) {
+        errorMessage = 'Request timeout - ไฟล์อาจใหญ่เกินไป';
       } else if (err.message.includes('413')) {
         errorMessage = 'ไฟล์รูปภาพมีขนาดใหญ่เกินไป';
       } else if (err.message.includes('500')) {
@@ -611,14 +603,7 @@ export default function WorkflowPOS() {
         errorMessage = err.message;
       }
       
-      alert(`❌ เกิดข้อผิดพลาด: ${errorMessage}`);
-      alert(`Error details: ${JSON.stringify({
-        message: err.message,
-        name: err.name,
-        stack: err.stack,
-        fileSize: file.size,
-        fileName: file.name
-      }, null, 2)}`);
+      alert(`❌ เกิดข้อผิดพลาด: ${errorMessage}\n\nรายละเอียด:\nFile: ${file.name}\nSize: ${(file.size / 1024).toFixed(2)} KB\nError: ${err.message}`);
       
       setError(errorMessage);
     } finally {
