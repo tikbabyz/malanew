@@ -169,13 +169,7 @@ export default function AdminDashboard() {
     },
   ];
 
-  // quick actions
-  const quickActions = [
-    { icon: FaUsers, label: 'จัดการผู้ใช้', path: '/admin/users', color: '#3b82f6', count: users.length },
-    { icon: FaShoppingCart, label: 'จัดการสินค้า', path: '/admin/products', color: '#10b981', count: products.length },
-    { icon: FaMoneyBillWave, label: 'การชำระเงิน', path: '/admin/payments', color: '#f59e0b', count: payments.length },
-    { icon: FaEye, label: 'ออเดอร์ทั้งหมด', path: '/admin/orders', color: '#ef4444', count: totalOrders },
-  ];
+
 
   // activity
   const activityFeed = React.useMemo(() => {
@@ -250,29 +244,6 @@ export default function AdminDashboard() {
 
   return (
     <div className={styles.dashboardContainer}>
-      {/* Quick Actions */}
-      <div className={styles.quickActionsSection}>
-        <h2 className={styles.sectionTitle}>การดำเนินการด่วน</h2>
-        <div className={styles.quickActionsGrid}>
-          {quickActions.map((action, idx) => {
-            const Icon = action.icon;
-            return (
-              <a
-                key={idx}
-                href={action.path}
-                className={styles.quickActionCard}
-                style={{ '--action-color': action.color }}
-              >
-                <div className={styles.actionIcon}>
-                  <Icon />
-                </div>
-                <span className={styles.actionLabel}>{action.label}</span>
-              </a>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Statistics Section */}
       {loading ? (
         <div className={styles.loadingSection}>

@@ -204,12 +204,12 @@ export default function Menu() {
               {filteredProducts.map((product) => {
                 const priceInfo = calculatePrice(product);
                 const hasImageError = imageErrors.has(product.id);
-                const isOutOfStock = product.stock <= 0;
+                const isOutOfStock = false; // ไม่แสดงสถานะหมดสต็อก
 
                 return (
                   <div 
                     key={product.id} 
-                    className={`${styles.productCard} ${isOutOfStock ? styles.outOfStock : ''}`}
+                    className={styles.productCard}
                   >
                     {/* Product Image */}
                     <div className={styles.productImageContainer}>
@@ -229,31 +229,24 @@ export default function Menu() {
                       )}
                       
                       {/* Discount Badge */}
-                      {priceInfo.hasDiscount && !isOutOfStock && (
+                      {priceInfo.hasDiscount && (
                         <div className={styles.discountBadge}>
                           <FaStar className={styles.badgeIcon} />
                           โปรโมชั่น
                         </div>
                       )}
-                      
-                      {/* Stock Status */}
-                      {isOutOfStock && (
-                        <div className={styles.outOfStockBadge}>
-                          สินค้าหมด
-                        </div>
-                      )}
                     </div>
 
                     {/* Product Info */}
-                    <div className={`${styles.productInfo} ${isOutOfStock ? styles.outOfStock : ''}`}>
+                    <div className={styles.productInfo}>
                       <div className={styles.productHeader}>
-                        <h3 className={`${styles.productName} ${isOutOfStock ? styles.outOfStock : ''}`}>
+                        <h3 className={styles.productName}>
                           {product.name}
                         </h3>
                       </div>
 
                       <div className={styles.productPricing}>
-                        {priceInfo.hasDiscount && !isOutOfStock ? (
+                        {priceInfo.hasDiscount ? (
                           <div className={styles.discountPricing}>
                             <span className={styles.originalPrice}>
                               ฿{Number(priceInfo.original).toLocaleString("th-TH")}
@@ -262,17 +255,8 @@ export default function Menu() {
                               ฿{Number(priceInfo.final).toLocaleString("th-TH")}
                             </span>
                           </div>
-                        ) : priceInfo.hasDiscount && isOutOfStock ? (
-                          <div className={styles.discountPricing}>
-                            <span className={`${styles.originalPrice} ${styles.outOfStock}`}>
-                              ฿{Number(priceInfo.original).toLocaleString("th-TH")}
-                            </span>
-                            <span className={`${styles.finalPrice} ${styles.outOfStock}`}>
-                              ฿{Number(priceInfo.final).toLocaleString("th-TH")}
-                            </span>
-                          </div>
                         ) : (
-                          <span className={`${styles.regularPrice} ${isOutOfStock ? styles.outOfStock : ''}`}>
+                          <span className={styles.regularPrice}>
                             ฿{Number(product.price).toLocaleString("th-TH")}
                           </span>
                         )}
@@ -283,10 +267,12 @@ export default function Menu() {
                           <FaTags className={styles.metaIcon} />
                           {product.category || "ไม่ระบุประเภท"}
                         </span>
-                        <span className={styles.metaItem}>
-                          <FaPalette className={styles.metaIcon} />
-                          สีไม้: {product.color || "ไม่ระบุ"}
-                        </span>
+                        {product.color && (
+                          <span className={styles.metaItem}>
+                            <FaPalette className={styles.metaIcon} />
+                            สีไม้: {product.color}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

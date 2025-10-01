@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useDataStore } from '@store/data.js';
 import ConfirmModal from "@shared/components/ConfirmModal/ConfirmModal.jsx";
 import styles from './Products.module.css';
+import colorStyles from './ColorPricing.module.css';
 import API, { getImageUrl } from '@services/api';
 import { 
   FaEdit, 
@@ -693,26 +694,26 @@ export default function Products() {
             ) : (
               <div className={styles.productsGrid}>
                 {filteredProducts.map(product => (
-                  <div key={product.id} className={`${styles.productCard} ${(product.stock || 0) === 0 ? styles.outOfStock : ''}`}>
+                  <div key={product.id} className={`${styles.productCard} ${!product.color && (product.stock || 0) === 0 ? styles.outOfStock : ''}`}>
                     <div className={styles.productImage}>
                       {product.image || product.imagePath ? (
                         <div className={styles.imageContainer}>
                           <img 
                             src={getImageUrl(product.imagePath || product.image)} 
                             alt={product.name}
-                            className={(product.stock || 0) === 0 ? styles.outOfStockImage : ''}
+                            className={!product.color && (product.stock || 0) === 0 ? styles.outOfStockImage : ''}
                           />
-                          {(product.stock || 0) === 0 && (
+                          {!product.color && (product.stock || 0) === 0 && (
                             <div className={styles.outOfStockOverlay}>
                               <span className={styles.outOfStockText}>หมดสต็อก</span>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className={`${styles.noImage} ${(product.stock || 0) === 0 ? styles.outOfStockNoImage : ''}`}>
+                        <div className={`${styles.noImage} ${!product.color && (product.stock || 0) === 0 ? styles.outOfStockNoImage : ''}`}>
                           <FaImage />
                           <span>ไม่มีรูปภาพ</span>
-                          {(product.stock || 0) === 0 && (
+                          {!product.color && (product.stock || 0) === 0 && (
                             <div className={styles.outOfStockOverlay}>
                               <span className={styles.outOfStockText}>หมดสต็อก</span>
                             </div>
@@ -760,12 +761,14 @@ export default function Products() {
                         <FaMoneyBillWave />
                         {product.price}฿
                       </div>
-                      <div className={styles.productStock}>
-                        <span className={styles.stockLabel}>สต็อก:</span>
-                        <span className={`${styles.stockValue} ${(product.stock || 0) === 0 ? styles.stockEmpty : (product.stock || 0) <= 5 ? styles.stockLow : styles.stockNormal}`}>
-                          {product.stock || 0} ชิ้น
-                        </span>
-                      </div>
+                      {!product.color && (
+                        <div className={styles.productStock}>
+                          <span className={styles.stockLabel}>สต็อก:</span>
+                          <span className={`${styles.stockValue} ${(product.stock || 0) === 0 ? styles.stockEmpty : (product.stock || 0) <= 5 ? styles.stockLow : styles.stockNormal}`}>
+                            {product.stock || 0} ชิ้น
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1086,21 +1089,15 @@ export default function Products() {
           {/* Color Price Modal */}
           {showColorPriceModal && (
             <div className={styles.modalBackdrop} onClick={closeColorPriceModal}>
-              <div className={styles.colorPricingModal} onClick={(e) => e.stopPropagation()}>
-                <div className={styles.colorPricingHeader}>
-                  <div className={styles.modalHeaderContent}>
-                    <div className={styles.modalIcon}>
-                      <span className={styles.colorLabelIcon}>🎨</span>
-                    </div>
-                    <div className={styles.modalTitleGroup}>
-                      <h3 className={styles.colorPricingTitle}>กำหนดราคาตามสีไม้</h3>
-                      <p className={styles.modalSubtitle}>ตั้งราคาสำหรับแต่ละสีของสินค้า</p>
-                    </div>
+              <div className={colorStyles.colorPricingModal} onClick={(e) => e.stopPropagation()}>
+                <div className={colorStyles.modalHeader}>
+                  <div>
+                    <h3 className={colorStyles.modalTitle}>กำหนดราคาตามสีไม้</h3>
+                    <p className={colorStyles.modalSubtitle}>ตั้งค่าราคาและสต็อกสำหรับแต่ละสีไม้</p>
                   </div>
                   <button 
                     className={styles.closeButton}
                     onClick={closeColorPriceModal}
-                    title="ปิด"
                   >
                     <FaTimes />
                   </button>
@@ -1165,45 +1162,56 @@ export default function Products() {
                     )}
                   </div>
 
-                  <div className={styles.newColorSection}>
-                    <h4 className={styles.newColorTitle}>เพิ่มสีใหม่</h4>
-                    <div className={styles.addColorRow}>
-                      <input
-                        type="text"
-                        className={styles.addColorInput}
-                        placeholder="ชื่อสี (เช่น red)"
-                        value={newColorName}
-                        onChange={(e) => setNewColorName(e.target.value)}
-                      />
-                      <div className={styles.stockInputGroup}>
+                  <div className={colorStyles.addColorForm}>
+                    <h4 className={colorStyles.formTitle}>เพิ่มสีใหม่</h4>
+                    <div className={colorStyles.formGrid}>
+                      <div className={colorStyles.formGroup}>
+                        <label className={colorStyles.formLabel}>ชื่อสี</label>
                         <input
-                          type="number"
-                          min={0}
-                          step={1}
-                          className={styles.stockInput}
-                          value={newColorStock}
-                          onChange={(e) => setNewColorStock(e.target.value)}
+                          type="text"
+                          className={colorStyles.formInput}
+                          placeholder="เช่น blue, green, pink"
+                          value={newColorName}
+                          onChange={(e) => setNewColorName(e.target.value)}
                         />
-                        <span className={styles.stockUnit}>ไม้</span>
                       </div>
-                      <div className={styles.priceInputGroup}>
-                        <input
-                          type="number"
-                          min={0}
-                          className={styles.priceInput}
-                          value={newColorPrice}
-                          onChange={(e) => setNewColorPrice(e.target.value)}
-                        />
-                        <span className={styles.priceUnit}>฿</span>
+                      <div className={colorStyles.formGroup}>
+                        <label className={colorStyles.formLabel}>สต็อก</label>
+                        <div className={colorStyles.inputGroup}>
+                          <input
+                            type="number"
+                            min={0}
+                            step={1}
+                            className={colorStyles.formInput}
+                            value={newColorStock}
+                            onChange={(e) => setNewColorStock(e.target.value)}
+                            placeholder="0"
+                          />
+                          <span className={colorStyles.inputUnit}>ไม้</span>
+                        </div>
+                      </div>
+                      <div className={colorStyles.formGroup}>
+                        <label className={colorStyles.formLabel}>ราคา</label>
+                        <div className={colorStyles.inputGroup}>
+                          <input
+                            type="number"
+                            min={0}
+                            className={colorStyles.formInput}
+                            value={newColorPrice}
+                            onChange={(e) => setNewColorPrice(e.target.value)}
+                            placeholder="0"
+                          />
+                          <span className={colorStyles.inputUnit}>฿</span>
+                        </div>
                       </div>
                       <button
                         type="button"
-                        className={styles.addColorButton}
+                        className={colorStyles.addButton}
                         onClick={handleAddDraftColor}
                         disabled={!newColorName.trim()}
                       >
                         <FaPlus />
-                        เพิ่ม
+                        เพิ่มสี
                       </button>
                     </div>
                   </div>

@@ -4,6 +4,198 @@
 .usersContainer {
   background-color: #f8f9fa;
   min-height: 100vh;
+  padding: 1rem;
+}
+
+.contentContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Mobile Card List */
+.mobileCardList {
+  display: block;
+}
+
+.userCard {
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.userCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.userName {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.userUsername {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.roleChip {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.roleChip.admin {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.roleChip.staff {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.userCardBody {
+  margin-bottom: 1rem;
+}
+
+.userDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.userDetail {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.detailIcon {
+  font-size: 0.8rem;
+}
+
+.userPermissions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.permLabel {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.permTag {
+  background: #e9ecef;
+  color: #495057;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.userCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.userStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.userActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.actionBtn {
+  padding: 0.4rem 0.6rem;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.actionBtn:hover {
+  background: #f8f9fa;
+}
+
+.dangerBtn {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.dangerBtn:hover {
+  background: #f8d7da;
+}
+
+/* Desktop Table */
+.desktopTable {
+  display: none;
+}
+
+.tableCard {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.tableHeader {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.tableTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #333;
+  font-size: 1.25rem;
+}
+
+.tableContainer {
+  padding: 1rem;
+}
+
+.formCard {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 /* Error and Loading Banners */

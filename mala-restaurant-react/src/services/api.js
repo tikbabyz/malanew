@@ -188,10 +188,13 @@ export const API = {
   },
   health: () => http('/health'),
   detectImage: async (file, bbox) => {
-    const fd = new FormData();
-    fd.append('image', file);
-    if (bbox) fd.append('bbox', [bbox.x1, bbox.y1, bbox.x2, bbox.y2].join(','));
-    return httpForm('/detect', fd);
+  const fd = new FormData();
+  fd.append('image', file);
+  if (bbox) {
+    const vals = [bbox.x1, bbox.y1, bbox.x2, bbox.y2].map(v => Math.round(Number(v) || 0));
+    fd.append('bbox', vals.join(','));
+  }
+  return httpForm('/api/detect', fd); // เดิมเป็น '/detect' ให้แก้เป็น '/api/detect'
   },
   
   // Image upload for products

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+from types import SimpleNamespace
 from typing import Any, Dict, List, Optional, Tuple
 
 from flask import Blueprint, current_app, jsonify, request
@@ -246,6 +247,12 @@ def predict_on_roi(ctx: Dict[str, Any], arr_bgr_full, roi):
     model = ctx["model"]
     rx1, ry1, rx2, ry2 = roi
     crop_bgr = arr_bgr_full[ry1:ry2, rx1:rx2]
+    if crop_bgr.size == 0:
+        empty = SimpleNamespace(
+            names=getattr(model, "names", []),
+            boxes=None,
+        )
+        return [], empty
     result = model.predict(
         Image.fromarray(cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB)),
         conf=ctx["conf"],
@@ -476,84 +483,89 @@ def detect():
         except Exception:
             user_roi = None
 
-    if user_roi and ctx["respect_user_roi"]:
-        rx1, ry1, rx2, ry2 = pad_roi(*user_roi, width=W, height=H, pad_frac=ctx["user_pad"])
-        dets_raw, result = predict_on_roi(ctx, arr_bgr_full, (rx1, ry1, rx2, ry2))
-    else:
-        (rx1, ry1, rx2, ry2), result, dets_raw = pick_best_roi(ctx, arr_bgr_full, user_roi=user_roi)
+    try:
+        if user_roi and ctx["respect_user_roi"]:
+            rx1, ry1, rx2, ry2 = pad_roi(*user_roi, width=W, height=H, pad_frac=ctx["user_pad"])
+            dets_raw, result = predict_on_roi(ctx, arr_bgr_full, (rx1, ry1, rx2, ry2))
+        else:
+            (rx1, ry1, rx2, ry2), result, dets_raw = pick_best_roi(ctx, arr_bgr_full, user_roi=user_roi)
 
-    names = result.names if getattr(result, "names", None) else model.names
-    if isinstance(names, dict):
-        names = [names[k] for k in sorted(names.keys())]
+        names = result.names if getattr(result, "names", None) else model.names
+        if isinstance(names, dict):
+            names = [names[k] for k in sorted(names.keys())]
 
-    detections = []
-    for det in dets_raw:
-        x1, y1, x2, y2 = det["box"]
-        idx = det["cls"]
-        label = names[idx] if idx < len(names) else str(idx)
-        detections.append(
+        detections = []
+        for det in dets_raw:
+            x1, y1, x2, y2 = det["box"]
+            idx = det["cls"]
+            label = names[idx] if idx < len(names) else str(idx)
+            detections.append(
+                {
+                    "label": norm_label(label),
+                    "confidence": det["conf"],
+                    "box": [x1, y1, x2, y2],
+                }
+            )
+
+        if not (ctx["respect_user_roi"] and user_roi):
+            roi2, changed = tighten_roi_by_dets(ctx, detections, rx1, ry1, rx2, ry2, pad_ratio=0.12, min_boxes=6)
+            if not changed:
+                roi2, changed = refine_roi_with_color_mask(ctx, arr_bgr_full, (rx1, ry1, rx2, ry2), sv_min=ctx["sv_min"])
+            if changed:
+                rx1, ry1, rx2, ry2 = roi2
+                dets_raw2, result2 = predict_on_roi(ctx, arr_bgr_full, (rx1, ry1, rx2, ry2))
+                names2 = result2.names if getattr(result2, "names", None) else model.names
+                if isinstance(names2, dict):
+                    names2 = [names2[k] for k in sorted(names2.keys())]
+                detections = []
+                for det in dets_raw2:
+                    x1, y1, x2, y2 = det["box"]
+                    idx = det["cls"]
+                    label = names2[idx] if idx < len(names2) else str(idx)
+                    detections.append(
+                        {
+                            "label": norm_label(label),
+                            "confidence": det["conf"],
+                            "box": [x1, y1, x2, y2],
+                        }
+                    )
+
+        if ctx["respect_user_roi"] and user_roi:
+            detections = filter_dets_inside(detections, (rx1, ry1, rx2, ry2), shrink=0.03)
+
+        for det in detections:
+            x1, y1, x2, y2 = map(int, det["box"])
+            crop = arr_bgr_full[max(0, y1) : max(0, y2), max(0, x1) : max(0, x2)]
+            if crop.size == 0:
+                continue
+            best_color, score = classify_color(ctx, crop)
+            if best_color and score >= ctx["color_override_min"] and det["confidence"] < ctx["model_trust"]:
+                det["label"] = best_color
+
+        detections = dedupe_by_center(detections, threshold=0.45)
+
+        counts: Dict[str, int] = {}
+        for det in detections:
+            counts[det["label"]] = counts.get(det["label"], 0) + 1
+
+        canvas = arr_bgr_full.copy()
+        cv2.rectangle(canvas, (rx1, ry1), (rx2, ry2), (0, 200, 0), 2)
+        if user_roi:
+            ux1, uy1, ux2, uy2 = user_roi
+            cv2.rectangle(canvas, (ux1, uy1), (ux2, uy2), (0, 255, 255), 2)
+
+        annotated = draw(ctx, canvas, detections)
+
+        return jsonify(
             {
-                "label": norm_label(label),
-                "confidence": det["conf"],
-                "box": [x1, y1, x2, y2],
+                "counts": counts,
+                "total_items": sum(counts.values()),
+                "detections": detections,
+                "roi": {"x1": rx1, "y1": ry1, "x2": rx2, "y2": ry2},
+                "annotated": annotated,
             }
         )
 
-    if not (ctx["respect_user_roi"] and user_roi):
-        roi2, changed = tighten_roi_by_dets(ctx, detections, rx1, ry1, rx2, ry2, pad_ratio=0.12, min_boxes=6)
-        if not changed:
-            roi2, changed = refine_roi_with_color_mask(ctx, arr_bgr_full, (rx1, ry1, rx2, ry2), sv_min=ctx["sv_min"])
-        if changed:
-            rx1, ry1, rx2, ry2 = roi2
-            dets_raw2, result2 = predict_on_roi(ctx, arr_bgr_full, (rx1, ry1, rx2, ry2))
-            names2 = result2.names if getattr(result2, "names", None) else model.names
-            if isinstance(names2, dict):
-                names2 = [names2[k] for k in sorted(names2.keys())]
-            detections = []
-            for det in dets_raw2:
-                x1, y1, x2, y2 = det["box"]
-                idx = det["cls"]
-                label = names2[idx] if idx < len(names2) else str(idx)
-                detections.append(
-                    {
-                        "label": norm_label(label),
-                        "confidence": det["conf"],
-                        "box": [x1, y1, x2, y2],
-                    }
-                )
-
-    if ctx["respect_user_roi"] and user_roi:
-        detections = filter_dets_inside(detections, (rx1, ry1, rx2, ry2), shrink=0.03)
-
-    for det in detections:
-        x1, y1, x2, y2 = map(int, det["box"])
-        crop = arr_bgr_full[max(0, y1) : max(0, y2), max(0, x1) : max(0, x2)]
-        if crop.size == 0:
-            continue
-        best_color, score = classify_color(ctx, crop)
-        if best_color and score >= ctx["color_override_min"] and det["confidence"] < ctx["model_trust"]:
-            det["label"] = best_color
-
-    detections = dedupe_by_center(detections, threshold=0.45)
-
-    counts: Dict[str, int] = {}
-    for det in detections:
-        counts[det["label"]] = counts.get(det["label"], 0) + 1
-
-    canvas = arr_bgr_full.copy()
-    cv2.rectangle(canvas, (rx1, ry1), (rx2, ry2), (0, 200, 0), 2)
-    if user_roi:
-        ux1, uy1, ux2, uy2 = user_roi
-        cv2.rectangle(canvas, (ux1, uy1), (ux2, uy2), (0, 255, 255), 2)
-
-    annotated = draw(ctx, canvas, detections)
-
-    return jsonify(
-        {
-            "counts": counts,
-            "total_items": sum(counts.values()),
-            "detections": detections,
-            "roi": {"x1": rx1, "y1": ry1, "x2": rx2, "y2": ry2},
-            "annotated": annotated,
-        }
-    )
+    except Exception as exc:  # pragma: no cover - defensive guard for production
+        current_app.logger.exception("AI detect failed")
+        return jsonify({"error": "AI processing failed", "details": str(exc)}), 500

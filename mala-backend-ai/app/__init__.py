@@ -18,18 +18,17 @@ def create_app(config_class: type[Config] = Config) -> Flask:
         resources={
             r"/api/*": {
                 "origins": [
+                    "https://mala-restaurant.vercel.app",
                     "http://localhost:5173",
                     "http://127.0.0.1:5173",
                 ],
-                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                "allow_headers": ["Content-Type", "Authorization"],
             }
         },
+        supports_credentials=True,
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization"],
+        expose_headers=["Content-Type", "Authorization"],
     )
-
-    @app.route("/api/<path:_any>", methods=["OPTIONS"])
-    def _cors_preflight(_any):
-        return ("", 204)
 
     init_db(app)
     init_ai_model(app)

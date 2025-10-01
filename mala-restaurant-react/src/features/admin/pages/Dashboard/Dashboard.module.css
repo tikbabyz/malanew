@@ -198,6 +198,64 @@
   padding-left: 1.5rem;
 }
 
+/* Stats Section */
+.statsSection {
+  margin-bottom: var(--dash-spacing-2xl);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--dash-spacing-lg);
+  margin-bottom: var(--dash-spacing-2xl);
+}
+
+.statsCard {
+  background: white;
+  border-radius: var(--dash-radius-lg);
+  padding: var(--dash-spacing-xl);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--dash-border-light);
+}
+
+.statsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--dash-spacing-md);
+}
+
+.statsTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statsValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-top: var(--dash-spacing-sm);
+}
+
+.statsChange {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.statsUp {
+  color: #10b981;
+}
+
+.statsDown {
+  color: #ef4444;
+}
+
 .sectionTitle::before {
   content: '';
   position: absolute;
@@ -1197,7 +1255,7 @@
   .quickActionsGrid,
   .statsGrid,
   .metricsGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
   
   .quickActionsSection,
@@ -1583,7 +1641,7 @@
   }
   
   .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr 1fr;
   }
   
   .chartsContainer {
@@ -1714,6 +1772,42 @@
   .filterGroup {
     min-width: auto;
   }
+}
+
+/* Mobile Layout - 375px specific */
+@media (max-width: 375px) {
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--dash-spacing-md);
+  }
+  
+  .statsCard {
+    padding: var(--dash-spacing-lg);
+  }
+  
+  .statsTitle {
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+  
+  .statsValue {
+    font-size: 1.5rem;
+    margin-top: var(--dash-spacing-xs);
+  }
+  
+  .statsChange {
+    font-size: 0.75rem;
+  }
+  
+  .sectionTitle {
+    font-size: 1.5rem;
+    margin-bottom: var(--dash-spacing-lg);
+    padding-left: var(--dash-spacing-md);
+  }
+  
+  .dashboardContainer {
+    padding: var(--dash-spacing-md);
+  }
   
   .statsGrid {
     grid-template-columns: 1fr;
@@ -1765,8 +1859,44 @@
 .statsGrid,
 .metricsGrid,
 .chartsContainer {
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));  /* แทน 280px */
+  grid-template-columns: 1fr;  /* แทน 280px */
 }
 
 /* === FIX 4: ตาราง/คอนเทนต์ยาวไม่ให้ดันพาเรนต์กว้างเป็น 0 === */
 .tableWrapper { min-width: 0; overflow: auto; }
+
+/* Mobile Layout - 375px specific */
+@media (max-width: 375px) {
+  .statsGrid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: var(--dash-spacing-md);
+  }
+  
+  .statsCard {
+    padding: var(--dash-spacing-lg);
+  }
+  
+  .statsTitle {
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+  
+  .statsValue {
+    font-size: 1.5rem;
+    margin-top: var(--dash-spacing-xs);
+  }
+  
+  .statsChange {
+    font-size: 0.75rem;
+  }
+  
+  .sectionTitle {
+    font-size: 1.5rem;
+    margin-bottom: var(--dash-spacing-lg);
+    padding-left: var(--dash-spacing-md);
+  }
+  
+  .dashboardContainer {
+    padding: var(--dash-spacing-md);
+  }
+}

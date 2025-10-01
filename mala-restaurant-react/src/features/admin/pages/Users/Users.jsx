@@ -2,6 +2,7 @@ import React from 'react'
 import { useDataStore } from '@store/data.js'
 import ConfirmModal from "@shared/components/ConfirmModal/ConfirmModal.jsx"
 import styles from './Users.module.css'
+import mobileStyles from './UsersMobile.module.css'
 import { makePasswordHash } from '@utils/hash.js'
 import {
   FaUsers, 
@@ -271,7 +272,7 @@ export default function Users(){
     }))
 
   return(
-    <div className={styles.usersContainer}>      
+    <div className={`${styles.usersContainer} ${mobileStyles.usersContainer}`}>      
       {/* Error Display */}
       {error && (
         <div className={styles.errorBanner}>
@@ -326,11 +327,9 @@ export default function Users(){
         </div>
       </div>
 
-      <div className={styles.usersGridContainer}>
-        <div className={styles.usersGrid}>
-
+      <div className={styles.contentContainer}>
         {/* ====== Form Card ====== */}
-        <div className={styles.card}>
+        <div className={styles.formCard}>
           <div className={styles.headerRow}>
             <h2 className={styles.title}>
               {editId ? (
@@ -582,62 +581,168 @@ export default function Users(){
           )}
         </div>
 
+
+
         {/* ====== Table Card ====== */}
-         <div className={styles.tableScroll}>
-    <table className={styles.table}>
-      <thead>
-        <tr>
-          <th>ชื่อผู้ใช้</th>
-          <th>ชื่อ-นามสกุล</th>
-          <th>บทบาท</th>
-          <th>สิทธิ์การเข้าถึง</th>
-          <th>เบอร์โทรศัพท์</th>
-          <th>อีเมล</th>
-          <th>สถานะ</th>
-          <th className={styles.right}>จัดการ</th>
-        </tr>
-      </thead>
-      <tbody>
-              {users.map(u=>(
-                <tr key={u.id}>
-                  <td>{u.username}</td>
-                  <td>{u.name}</td>
-                  <td>{u.role === 'ADMIN' ? 'ผู้ดูแลระบบ' : 'พนักงาน'}</td>
-                  <td>
-                    <div className={styles.permTags}>{tagsFromPerms(normalizePermsObj(u.perms, u.role)).map((t,i)=>(
-                        <span key={i} className={styles.tag}>{t}</span>
-                      ))}
+        <div className={styles.tableCard}>
+          <div className={styles.tableHeader}>
+            <h2 className={styles.tableTitle}>
+              <FaUsers className={styles.titleIcon} />
+              รายการผู้ใช้งาน
+            </h2>
+          </div>
+          <div className={styles.tableContainer}>
+            <div className={styles.mobileCardList}>
+              {users.map(u => (
+                <div key={u.id} className={styles.userCard}>
+                  <div className={styles.userCardHeader}>
+                    <div className={styles.userInfo}>
+                      <h3 className={styles.userName}>{u.name}</h3>
+                      <span className={styles.userUsername}>@{u.username}</span>
                     </div>
-                  </td>
-                  <td>{u.phone}</td>
-                  <td>{u.email}</td>
-                  <td>
-                    <span className={u.active ? styles.statusActive : styles.statusInactive}>
-                      {u.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
+                    <span className={`${styles.roleChip} ${styles[u.role?.toLowerCase()]}`}>
+                      {u.role === 'ADMIN' ? (
+                        <>
+                          <FaUserShield />
+                          ผู้ดูแลระบบ
+                        </>
+                      ) : (
+                        <>
+                          <FaUserTie />
+                          พนักงาน
+                        </>
+                      )}
                     </span>
-                  </td>
-                  <td className={styles.right}>
-                    <div className={styles.actionsGroup}>
-                      <button className={styles.btnGhost} onClick={()=>handleEdit(u)}>
+                  </div>
+                  
+                  <div className={styles.userCardBody}>
+                    <div className={styles.userDetails}>
+                      {u.phone && (
+                        <div className={styles.userDetail}>
+                          <FaPhone className={styles.detailIcon} />
+                          <span>{u.phone}</span>
+                        </div>
+                      )}
+                      {u.email && (
+                        <div className={styles.userDetail}>
+                          <FaEnvelope className={styles.detailIcon} />
+                          <span>{u.email}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className={styles.userPermissions}>
+                      <span className={styles.permLabel}>สิทธิ์:</span>
+                      <div className={styles.permTags}>
+                        {tagsFromPerms(normalizePermsObj(u.perms, u.role)).map((t,i) => (
+                          <span key={i} className={styles.permTag}>{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.userCardFooter}>
+                    <div className={styles.userStatus}>
+                      <span className={u.active ? styles.statusActive : styles.statusInactive}>
+                        {u.active ? (
+                          <>
+                            <FaCheckCircle />
+                            เปิดใช้งาน
+                          </>
+                        ) : (
+                          <>
+                            <FaTimesCircle />
+                            ปิดใช้งาน
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    
+                    <div className={styles.userActions}>
+                      <button 
+                        className={styles.actionBtn}
+                        onClick={() => handleEdit(u)}
+                      >
                         <FaEdit />
                         แก้ไข
                       </button>
-                      <button className={styles.btnGhost} onClick={()=>updateUser({...u,active:!u.active})}>
+                      <button 
+                        className={styles.actionBtn}
+                        onClick={() => updateUser({...u, active: !u.active})}
+                      >
                         {u.active ? <FaTimesCircle /> : <FaCheckCircle />}
-                        {u.active?'ปิดใช้งาน':'เปิดใช้งาน'}
+                        {u.active ? 'ปิด' : 'เปิด'}
                       </button>
-                      <button className={styles.btnDanger} onClick={()=>handleDeleteClick(u)}>
+                      <button 
+                        className={`${styles.actionBtn} ${styles.dangerBtn}`}
+                        onClick={() => handleDeleteClick(u)}
+                      >
                         <FaTrash />
                         ลบ
                       </button>
                     </div>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
 
+            {/* Desktop Table View */}
+            <div className={styles.desktopTable}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>ชื่อผู้ใช้</th>
+                    <th>ชื่อ-นามสกุล</th>
+                    <th>บทบาท</th>
+                    <th>สิทธิ์การเข้าถึง</th>
+                    <th>เบอร์โทรศัพท์</th>
+                    <th>อีเมล</th>
+                    <th>สถานะ</th>
+                    <th className={styles.right}>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.id}>
+                      <td>{u.username}</td>
+                      <td>{u.name}</td>
+                      <td>{u.role === 'ADMIN' ? 'ผู้ดูแลระบบ' : 'พนักงาน'}</td>
+                      <td>
+                        <div className={styles.permTags}>
+                          {tagsFromPerms(normalizePermsObj(u.perms, u.role)).map((t,i) => (
+                            <span key={i} className={styles.tag}>{t}</span>
+                          ))}
+                        </div>
+                      </td>
+                      <td>{u.phone}</td>
+                      <td>{u.email}</td>
+                      <td>
+                        <span className={u.active ? styles.statusActive : styles.statusInactive}>
+                          {u.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
+                        </span>
+                      </td>
+                      <td className={styles.right}>
+                        <div className={styles.actionsGroup}>
+                          <button className={styles.btnGhost} onClick={() => handleEdit(u)}>
+                            <FaEdit />
+                            แก้ไข
+                          </button>
+                          <button className={styles.btnGhost} onClick={() => updateUser({...u, active: !u.active})}>
+                            {u.active ? <FaTimesCircle /> : <FaCheckCircle />}
+                            {u.active ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}
+                          </button>
+                          <button className={styles.btnDanger} onClick={() => handleDeleteClick(u)}>
+                            <FaTrash />
+                            ลบ
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
